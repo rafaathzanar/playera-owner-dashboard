@@ -115,7 +115,7 @@ export default function Login() {
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Demo credentials: admin@playera.com / admin123
+              Demo credentials: testowner@playera.com / password123
             </p>
           </div>
         </form>

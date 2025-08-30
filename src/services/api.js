@@ -12,6 +12,7 @@ class ApiService {
 
   // Set auth token in localStorage
   setAuthToken(token) {
+    console.log("Setting auth token:", token ? "Token received" : "No token");
     localStorage.setItem("authToken", token);
   }
 
@@ -23,6 +24,10 @@ class ApiService {
   // Get headers with auth token
   getHeaders() {
     const token = this.getAuthToken();
+    console.log(
+      "Getting headers with token:",
+      token ? "Token exists" : "No token"
+    );
     return {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -35,12 +40,25 @@ class ApiService {
       const headers = this.getHeaders();
       const url = `${this.baseURL}${endpoint}`;
 
+      console.log("API Request:", {
+        url,
+        method: options.method || "GET",
+        headers,
+        body: options.body,
+      });
+
       const response = await fetch(url, {
         ...options,
         headers: {
           ...headers,
           ...options.headers,
         },
+      });
+
+      console.log("API Response:", {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
       });
 
       if (!response.ok) {
@@ -51,6 +69,7 @@ class ApiService {
         }
 
         const errorData = await response.json().catch(() => ({}));
+        console.log("Error response data:", errorData);
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
@@ -64,10 +83,13 @@ class ApiService {
 
   // Authentication APIs
   async login(email, password) {
+    console.log("Login attempt with:", { email, password });
     const response = await this.request("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
+
+    console.log("Login response:", response);
 
     if (response.token) {
       this.setAuthToken(response.token);
