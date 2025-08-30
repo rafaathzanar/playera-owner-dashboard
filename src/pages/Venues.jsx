@@ -45,7 +45,12 @@ export default function Venues() {
       // Fetch single venue from backend (each owner has only one venue)
       try {
         const venueData = await api.getVenueByOwner(user.userId);
-        console.log('Fetched venue:', venueData);
+        console.log('=== DEBUG: Venue Data Received ===');
+        console.log('Raw venueData:', venueData);
+        console.log('venueData.venueId:', venueData?.venueId);
+        console.log('venueData type:', typeof venueData);
+        console.log('venueData keys:', venueData ? Object.keys(venueData) : 'null');
+        console.log('===============================');
         
         if (venueData && venueData.venueId) {
           // Transform the data to match our frontend structure
@@ -66,6 +71,11 @@ export default function Venues() {
             contactNo: venueData.contactNo
           };
           
+          console.log('=== DEBUG: Transformed Venue ===');
+          console.log('transformedVenue:', transformedVenue);
+          console.log('transformedVenue.venueId:', transformedVenue.venueId);
+          console.log('===============================');
+          
           setVenues([transformedVenue]);
           
           // Set courts if they exist
@@ -76,6 +86,10 @@ export default function Venues() {
           }
         } else {
           // No venue data
+          console.log('=== DEBUG: No Venue ID Found ===');
+          console.log('venueData exists:', !!venueData);
+          console.log('venueData.venueId:', venueData?.venueId);
+          console.log('===============================');
           setVenues([]);
           setCourts([]);
         }
@@ -219,7 +233,7 @@ export default function Venues() {
           </div>
           <div className="mt-4 sm:mt-0 flex space-x-3">
             <Link
-              to="/add-court"
+              to={`/add-court/${venues[0].venueId}`}
               className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
@@ -263,7 +277,7 @@ export default function Venues() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Actions</h3>
               <div className="space-y-2">
                 <Link
-                  to="/add-court"
+                  to={`/add-court/${venues[0].venueId}`}
                   className="block w-full text-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700"
                 >
                   <PlusIcon className="h-4 w-4 inline mr-2" />
@@ -271,7 +285,7 @@ export default function Venues() {
                 </Link>
                 <Link
                   to={`/edit-venue/${venues[0].venueId}`}
-                  className="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                  className="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-green-700"
                 >
                   <PencilIcon className="h-4 w-4 inline mr-2" />
                   Edit Venue
@@ -289,7 +303,7 @@ export default function Venues() {
               <p className="text-gray-600 mt-1">Manage your sports courts and facilities</p>
             </div>
             <Link
-              to="/add-court"
+              to={`/add-court/${venues[0].venueId}`}
               className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
@@ -340,7 +354,7 @@ export default function Venues() {
                 Get started by adding your first sports court to your venue.
               </p>
               <Link
-                to="/add-court"
+                to={`/add-court/${venues[0].venueId}`}
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
               >
                 <PlusIcon className="h-5 w-5 mr-2" />

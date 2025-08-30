@@ -11,9 +11,12 @@ import {
   ClockIcon,
   CogIcon
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
 
 export default function AddVenue() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
@@ -96,22 +99,40 @@ export default function AddVenue() {
     setLoading(true);
 
     try {
+      // Prepare venue data for backend
       const venueData = {
-        ...basicInfo,
-        ...amenities,
-        ...businessHours,
-        ...dynamicPricing,
-        ...bookingRules
+        name: basicInfo.name,
+        address: basicInfo.address,
+        location: basicInfo.location,
+        description: basicInfo.description,
+        contactNo: basicInfo.contactNo,
+        email: basicInfo.email,
+        website: basicInfo.website,
+        latitude: basicInfo.latitude || null,
+        longitude: basicInfo.longitude || null,
+        venueType: basicInfo.venueType,
+        maxCapacity: basicInfo.maxCapacity ? parseInt(basicInfo.maxCapacity) : null,
+        status: basicInfo.status,
+        parkingAvailable: amenities.parkingAvailable,
+        foodAvailable: amenities.foodAvailable,
+        changingRoomsAvailable: amenities.changingRoomsAvailable,
+        showerAvailable: amenities.showerAvailable,
+        wifiAvailable: amenities.wifiAvailable,
+        basePrice: businessHours.basePrice ? parseFloat(businessHours.basePrice) : null,
+        openingHours: businessHours.openingHours,
+        cancellationPolicy: businessHours.cancellationPolicy,
+        refundPolicy: businessHours.refundPolicy,
+        // Add owner ID to associate venue with the current user
+        ownerId: user.userId
       };
 
       console.log("Creating venue:", venueData);
       
-      // TODO: Replace with real API call
-      // const response = await api.createVenue(venueData);
+      // Make real API call to create venue
+      const response = await api.createVenue(venueData);
+      console.log("Venue created successfully:", response);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Navigate back to venues page
       navigate("/venues");
     } catch (error) {
       console.error("Error creating venue:", error);

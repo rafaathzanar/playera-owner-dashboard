@@ -8,6 +8,8 @@ import Dashboard from "./pages/Dashboard";
 import Venues from "./pages/Venues";
 import AddVenue from "./pages/AddVenue";
 import EditVenue from "./pages/EditVenue";
+import AddCourt from "./pages/AddCourt";
+import EditCourt from "./pages/EditCourt";
 import VenueDetails from "./pages/VenueDetails";
 import CourtManagement from "./pages/CourtManagement";
 import EquipmentManagement from "./pages/EquipmentManagement";
@@ -55,7 +57,23 @@ export default function App() {
               </>
             </ProtectedRoute>
           } />
-          <Route path="/edit-venue/:id" element={
+          <Route path="/add-court/:venueId" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <AddCourt />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/edit-court/:courtId" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <EditCourt />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/edit-venue/:venueId" element={
             <ProtectedRoute>
               <>
                 <Navbar />

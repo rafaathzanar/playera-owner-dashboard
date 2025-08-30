@@ -35,25 +35,25 @@ class ApiService {
   }
 
   // Generic request method
-  async request(endpoint, options = {}) {
+  async request(endpoint, method = "GET", body = null) {
     try {
       const headers = this.getHeaders();
       const url = `${this.baseURL}${endpoint}`;
 
       console.log("API Request:", {
         url,
-        method: options.method || "GET",
+        method,
         headers,
-        body: options.body,
+        body,
       });
 
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...headers,
-          ...options.headers,
-        },
-      });
+      const options = {
+        method,
+        headers,
+        ...(body && { body: JSON.stringify(body) }),
+      };
+
+      const response = await fetch(url, options);
 
       console.log("API Response:", {
         status: response.status,
@@ -84,9 +84,9 @@ class ApiService {
   // Authentication APIs
   async login(email, password) {
     console.log("Login attempt with:", { email, password });
-    const response = await this.request("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
+    const response = await this.request("/auth/login", "POST", {
+      email,
+      password,
     });
 
     console.log("Login response:", response);
@@ -99,10 +99,7 @@ class ApiService {
   }
 
   async register(userData) {
-    return await this.request("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(userData),
-    });
+    return await this.request("/auth/register", "POST", userData);
   }
 
   async getCurrentUser() {
@@ -119,23 +116,15 @@ class ApiService {
   }
 
   async createVenue(venueData) {
-    return await this.request("/venues", {
-      method: "POST",
-      body: JSON.stringify(venueData),
-    });
+    return await this.request("/venues", "POST", venueData);
   }
 
   async updateVenue(id, venueData) {
-    return await this.request(`/venues/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(venueData),
-    });
+    return await this.request(`/venues/${id}`, "PUT", venueData);
   }
 
   async deleteVenue(id) {
-    return await this.request(`/venues/${id}`, {
-      method: "DELETE",
-    });
+    return await this.request(`/venues/${id}`, "DELETE");
   }
 
   // Get venue by owner ID (each owner has only one venue)
@@ -154,23 +143,23 @@ class ApiService {
   }
 
   async createCourt(courtData) {
-    return await this.request("/courts", {
-      method: "POST",
-      body: JSON.stringify(courtData),
-    });
+    return await this.request("/courts", "POST", courtData);
+  }
+
+  async getCourtById(id) {
+    return await this.request(`/courts/${id}`);
   }
 
   async updateCourt(id, courtData) {
-    return await this.request(`/courts/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(courtData),
-    });
+    return await this.request(`/courts/${id}`, "PUT", courtData);
   }
 
   async deleteCourt(id) {
-    return await this.request(`/courts/${id}`, {
-      method: "DELETE",
-    });
+    return await this.request(`/courts/${id}`, "DELETE");
+  }
+
+  async getCourtsByVenue(venueId) {
+    return await this.request(`/courts/venue/${venueId}`);
   }
 
   // Equipment Management APIs
@@ -179,23 +168,15 @@ class ApiService {
   }
 
   async createEquipment(equipmentData) {
-    return await this.request("/equipment", {
-      method: "POST",
-      body: JSON.stringify(equipmentData),
-    });
+    return await this.request("/equipment", "POST", equipmentData);
   }
 
   async updateEquipment(id, equipmentData) {
-    return await this.request(`/equipment/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(equipmentData),
-    });
+    return await this.request(`/equipment/${id}`, "PUT", equipmentData);
   }
 
   async deleteEquipment(id) {
-    return await this.request(`/equipment/${id}`, {
-      method: "DELETE",
-    });
+    return await this.request(`/equipment/${id}`, "DELETE");
   }
 
   // Booking Management APIs
@@ -208,10 +189,7 @@ class ApiService {
   }
 
   async updateBookingStatus(id, status) {
-    return await this.request(`/bookings/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    });
+    return await this.request(`/bookings/${id}/status`, "PATCH", { status });
   }
 
   // Dashboard Analytics APIs
@@ -244,9 +222,8 @@ class ApiService {
   }
 
   async respondToReview(reviewId, response) {
-    return await this.request(`/reviews/${reviewId}/respond`, {
-      method: "POST",
-      body: JSON.stringify({ response }),
+    return await this.request(`/reviews/${reviewId}/respond`, "POST", {
+      response,
     });
   }
 
