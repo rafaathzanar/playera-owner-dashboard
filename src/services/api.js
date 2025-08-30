@@ -83,6 +83,10 @@ class ApiService {
     });
   }
 
+  async getCurrentUser() {
+    return await this.request("/auth/me");
+  }
+
   // Venue Management APIs
   async getVenues() {
     return await this.request("/venues");
@@ -110,6 +114,16 @@ class ApiService {
     return await this.request(`/venues/${id}`, {
       method: "DELETE",
     });
+  }
+
+  // Get venue by owner ID (each owner has only one venue)
+  async getVenueByOwner(ownerId) {
+    return await this.request(`/venues/owner/${ownerId}/venue`);
+  }
+
+  // Get venues by owner ID (legacy method - returns list with single venue)
+  async getVenuesByOwner(ownerId) {
+    return await this.request(`/venues/owner/${ownerId}`);
   }
 
   // Court Management APIs
@@ -221,6 +235,3 @@ class ApiService {
 }
 
 export default new ApiService();
-
-
-

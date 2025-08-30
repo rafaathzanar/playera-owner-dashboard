@@ -10,10 +10,13 @@ import {
   UsersIcon,
   StarIcon
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [venue, setVenue] = useState(null);
   const [stats, setStats] = useState({
-    totalVenues: 0,
     totalCourts: 0,
     totalBookings: 0,
     totalRevenue: 0,
@@ -25,16 +28,40 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch real data from API
+    // Fetch venue and dashboard data from API
     fetchDashboardData();
   }, []);
 
+  useEffect(() => {
+    // Fetch venue data when component mounts
+    fetchVenueData();
+  }, []);
+
+  const fetchVenueData = async () => {
+    try {
+      if (!user?.userId) {
+        console.error('User not authenticated');
+        return;
+      }
+
+      // Fetch venue data from backend
+      const venueData = await api.getVenueByOwner(user.userId);
+      setVenue(venueData);
+    } catch (error) {
+      console.error("Error fetching venue data:", error);
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
-      // Mock data for now - replace with real API calls
+      if (!user?.userId) {
+        console.error('User not authenticated');
+        return;
+      }
+
+      // TODO: Replace with real API calls to get venue-specific analytics
       setStats({
-        totalVenues: 3,
-        totalCourts: 8,
+        totalCourts: venue?.courts?.length || 0,
         totalBookings: 156,
         totalRevenue: 125000,
         pendingBookings: 12,
@@ -118,19 +145,32 @@ export default function Dashboard() {
           <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your venues today.</p>
         </div>
 
+        {/* Venue Info */}
+        {venue && (
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{venue.name}</h2>
+                <p className="text-gray-600 mt-1">{venue.description}</p>
+                <p className="text-gray-500 mt-1">{venue.address}, {venue.location}</p>
+              </div>
+              <div className="text-right">
+                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                  venue.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {venue.status}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
-            title="Total Venues"
-            value={stats.totalVenues}
-            icon={BuildingOfficeIcon}
-            color="bg-blue-500"
-            change={5}
-          />
-          <StatCard
             title="Total Courts"
             value={stats.totalCourts}
-            icon={CalendarIcon}
+            icon={UsersIcon}
             color="bg-green-500"
             change={12}
           />
@@ -148,6 +188,13 @@ export default function Dashboard() {
             color="bg-orange-500"
             change={15}
           />
+          <StatCard
+            title="Pending Bookings"
+            value={stats.pendingBookings}
+            icon={ClockIcon}
+            color="bg-blue-500"
+            change={5}
+          />
         </div>
 
         {/* Quick Actions */}
@@ -155,10 +202,10 @@ export default function Dashboard() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <QuickActionCard
-              title="Add New Venue"
-              description="Create a new sports venue with courts and amenities"
-              icon={PlusIcon}
-              href="/add-venue"
+              title="Manage Venue"
+              description="Edit venue details, amenities, and business settings"
+              icon={BuildingOfficeIcon}
+              href={venue ? `/edit-venue/${venue.venueId}` : "/add-venue"}
               color="bg-blue-500"
             />
             <QuickActionCard

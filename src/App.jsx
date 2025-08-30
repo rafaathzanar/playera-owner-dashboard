@@ -1,6 +1,9 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/NavBar";
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Venues from "./pages/Venues";
 import AddVenue from "./pages/AddVenue";
@@ -16,22 +19,108 @@ import Settings from "./pages/Settings";
 
 export default function App() {
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/venues" element={<Venues />} />
-        <Route path="/venues/:id" element={<VenueDetails />} />
-        <Route path="/add-venue" element={<AddVenue />} />
-        <Route path="/edit-venue/:id" element={<EditVenue />} />
-        <Route path="/venues/:venueId/courts" element={<CourtManagement />} />
-        <Route path="/venues/:venueId/equipment" element={<EquipmentManagement />} />
-        <Route path="/venues/:venueId/timeslots" element={<TimeSlotManagement />} />
-        <Route path="/venues/:venueId/pricing" element={<DynamicPricing />} />
-        <Route path="/bookings" element={<BookingManagement />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <Dashboard />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/venues" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <Venues />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/venues/:id" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <VenueDetails />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/add-venue" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <AddVenue />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/edit-venue/:id" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <EditVenue />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/venues/:venueId/courts" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <CourtManagement />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/venues/:venueId/equipment" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <EquipmentManagement />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/venues/:venueId/timeslots" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <TimeSlotManagement />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/venues/:venueId/pricing" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <DynamicPricing />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/bookings" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <BookingManagement />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/analytics" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <Analytics />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <Settings />
+              </>
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }

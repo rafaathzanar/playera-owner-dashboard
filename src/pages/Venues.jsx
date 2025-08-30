@@ -12,8 +12,11 @@ import {
   ClockIcon,
   CurrencyDollarIcon
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
 
 export default function Venues() {
+  const { user } = useAuth();
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,54 +29,48 @@ export default function Venues() {
 
   const fetchVenues = async () => {
     try {
-      // TODO: Replace with real API call
-      const mockVenues = [
-        {
-          venueId: 1,
-          name: "Colombo Indoor Sports Complex",
-          location: "Dehiwala, Colombo",
-          address: "70 Galle Road, Dehiwala, Colombo",
-          venueType: "INDOOR",
-          status: "ACTIVE",
-          maxCapacity: 100,
-          basePrice: 800.00,
-          totalCourts: 3,
-          totalRevenue: 45000,
-          lastBooking: "2024-01-15",
-          images: ["https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400&h=300&fit=crop"]
-        },
-        {
-          venueId: 2,
-          name: "Kandy Sports Arena",
-          location: "Kandy",
-          address: "123 Peradeniya Road, Kandy",
-          venueType: "OUTDOOR",
-          status: "ACTIVE",
-          maxCapacity: 150,
-          basePrice: 600.00,
-          totalCourts: 4,
-          totalRevenue: 32000,
-          lastBooking: "2024-01-14",
-          images: ["https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400&h=300&fit=crop"]
-        },
-        {
-          venueId: 3,
-          name: "Galle Beach Sports Center",
-          location: "Galle",
-          address: "45 Beach Road, Galle",
-          venueType: "OUTDOOR",
-          status: "MAINTENANCE",
-          maxCapacity: 80,
-          basePrice: 500.00,
-          totalCourts: 2,
-          totalRevenue: 18000,
-          lastBooking: "2024-01-10",
-          images: ["https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=400&h=300&fit=crop"]
-        }
-      ];
-      setVenues(mockVenues);
+      setLoading(true);
+      
+      if (!user?.userId) {
+        console.error('User not authenticated');
+        setVenues([]);
+        return;
+      }
+
+      // Fetch single venue from backend (each owner has only one venue)
+      try {
+        const venueData = await api.getVenueByOwner(user.userId);
+        console.log('Fetched venue:', venueData);
+        
+        // Transform the data to match our frontend structure
+        const transformedVenue = {
+          venueId: venueData.venueId,
+          name: venueData.name,
+          location: venueData.location,
+          address: venueData.address,
+          venueType: venueData.venueType || 'INDOOR',
+          status: venueData.status || 'ACTIVE',
+          maxCapacity: venueData.maxCapacity || 100,
+          basePrice: venueData.basePrice || 0.0,
+          totalCourts: venueData.courts?.length || 0,
+          totalRevenue: 0, // Will be calculated from analytics
+          lastBooking: null, // Will be fetched separately if needed
+          images: venueData.images || [],
+          description: venueData.description,
+          contactNo: venueData.contactNo
+        };
+        
+        setVenues([transformedVenue]);
+      } catch (error) {
+        // If no venue exists, show empty state
+        console.log('No venue found for owner, showing empty state');
+        setVenues([]);
+      }
     } catch (error) {
-      console.error("Error fetching venues:", error);
+      console.error("Error fetching venue:", error);
+      // Show error message to user
+      alert(`Failed to fetch venue: ${error.message}`);
+      setVenues([]);
     } finally {
       setLoading(false);
     }
@@ -133,17 +130,27 @@ export default function Venues() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Venues</h1>
-            <p className="text-gray-600 mt-2">Manage your sports venues, courts, and facilities</p>
+            <h1 className="text-3xl font-bold text-gray-900">My Venue</h1>
+            <p className="text-gray-600 mt-2">Manage your sports venue, courts, and facilities</p>
           </div>
           <div className="mt-4 sm:mt-0">
-            <Link
-              to="/add-venue"
-              className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add New Venue
-            </Link>
+            {venues.length === 0 ? (
+              <Link
+                to="/add-venue"
+                className="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Create Venue
+              </Link>
+            ) : (
+              <Link
+                to={`/edit-venue/${venues[0].venueId}`}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <PencilIcon className="h-5 w-5 mr-2" />
+                Edit Venue
+              </Link>
+            )}
           </div>
         </div>
 
@@ -294,11 +301,11 @@ export default function Venues() {
         {filteredVenues.length === 0 && (
           <div className="text-center py-12">
             <BuildingOfficeIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No venues found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No venue found</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm || statusFilter !== "ALL" || venueTypeFilter !== "ALL"
                 ? "Try adjusting your search or filter criteria."
-                : "Get started by creating your first venue."}
+                : "Get started by creating your venue."}
             </p>
             {!searchTerm && statusFilter === "ALL" && venueTypeFilter === "ALL" && (
               <div className="mt-6">
@@ -307,7 +314,7 @@ export default function Venues() {
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
-                  Add New Venue
+                  Create Venue
                 </Link>
               </div>
             )}
