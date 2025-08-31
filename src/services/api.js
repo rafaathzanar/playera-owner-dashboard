@@ -189,7 +189,10 @@ class ApiService {
   }
 
   async updateBookingStatus(id, status) {
-    return await this.request(`/bookings/${id}/status`, "PATCH", { status });
+    return await this.request(
+      `/bookings/${id}/status?status=${status}`,
+      "PATCH"
+    );
   }
 
   // Dashboard Analytics APIs

@@ -12,10 +12,14 @@ import {
   PhoneIcon,
   EnvelopeIcon
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
+import websocketService from "../services/websocket";
 
 export default function BookingManagement() {
   const { venueId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
@@ -38,6 +42,25 @@ export default function BookingManagement() {
     fetchVenueAndBookings();
   }, [venueId]);
 
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    if (venue?.venueId) {
+      // Connect to WebSocket for real-time updates
+      websocketService.connect(venue.venueId, handleWebSocketMessage)
+        .then(() => {
+          console.log('WebSocket connected for venue:', venue.venueId);
+        })
+        .catch(error => {
+          console.error('Failed to connect WebSocket:', error);
+        });
+
+      // Cleanup on unmount
+      return () => {
+        websocketService.disconnect();
+      };
+    }
+  }, [venue?.venueId]);
+
   useEffect(() => {
     filterBookings();
   }, [bookings, statusFilter, courtFilter, searchTerm, dateFilter, dateRange]);
@@ -45,107 +68,61 @@ export default function BookingManagement() {
   const fetchVenueAndBookings = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with real API calls
-      // const venueData = await api.getVenueById(venueId);
-      // const bookingsData = await api.getBookingsByVenue(venueId);
       
-      // Mock data for now
-      setVenue({
-        name: 'Colombo Indoor Sports Complex',
-        venueId: venueId
-      });
-      
-      setBookings([
-        {
-          bookingId: 1,
-          customerName: 'John Doe',
-          customerEmail: 'john.doe@email.com',
-          customerPhone: '+94771234567',
-          venueName: 'Colombo Indoor Sports Complex',
-          courtName: 'Basketball Court 1',
-          courtType: 'BASKETBALL',
-          date: '2024-01-15',
-          startTime: '18:00',
-          endTime: '20:00',
-          duration: 2,
-          status: 'PENDING',
-          totalCost: 2400,
-          courtCost: 2400,
-          equipmentCost: 0,
-          specialRequests: 'Please ensure the court is well-lit',
-          bookingDate: '2024-01-10T10:30:00',
-          paymentStatus: 'PENDING',
-          equipmentBookings: []
-        },
-        {
-          bookingId: 2,
-          customerName: 'Jane Smith',
-          customerEmail: 'jane.smith@email.com',
-          customerPhone: '+94771234568',
-          venueName: 'Colombo Indoor Sports Complex',
-          courtName: 'Futsal Court 1',
-          courtType: 'FUTSAL',
-          date: '2024-01-15',
-          startTime: '19:00',
-          endTime: '21:00',
-          duration: 2,
-          status: 'CONFIRMED',
-          totalCost: 2000,
-          courtCost: 2000,
-          equipmentCost: 0,
-          specialRequests: '',
-          bookingDate: '2024-01-10T11:15:00',
-          paymentStatus: 'PAID',
-          equipmentBookings: []
-        },
-        {
-          bookingId: 3,
-          customerName: 'Mike Johnson',
-          customerEmail: 'mike.johnson@email.com',
-          customerPhone: '+94771234569',
-          venueName: 'Colombo Indoor Sports Complex',
-          courtName: 'Badminton Court 1',
-          courtType: 'BADMINTON',
-          date: '2024-01-16',
-          startTime: '14:00',
-          endTime: '16:00',
-          duration: 2,
-          status: 'CONFIRMED',
-          totalCost: 1600,
-          courtCost: 1600,
-          equipmentCost: 300,
-          specialRequests: 'Need 2 rackets and shuttlecocks',
-          bookingDate: '2024-01-10T14:20:00',
-          paymentStatus: 'PAID',
-          equipmentBookings: [
-            { name: 'Badminton Racket', quantity: 2, cost: 200 },
-            { name: 'Shuttlecocks', quantity: 1, cost: 100 }
-          ]
-        },
-        {
-          bookingId: 4,
-          customerName: 'Sarah Wilson',
-          customerEmail: 'sarah.wilson@email.com',
-          customerPhone: '+94771234570',
-          venueName: 'Colombo Indoor Sports Complex',
-          courtName: 'Basketball Court 1',
-          courtType: 'BASKETBALL',
-          date: '2024-01-14',
-          startTime: '16:00',
-          endTime: '18:00',
-          duration: 2,
-          status: 'CANCELLED',
-          totalCost: 2400,
-          courtCost: 2400,
-          equipmentCost: 0,
-          specialRequests: '',
-          bookingDate: '2024-01-10T09:45:00',
-          paymentStatus: 'REFUNDED',
-          equipmentBookings: []
+      if (!user?.userId) {
+        console.error('User not authenticated');
+        return;
+      }
+
+      // Fetch venue data first
+      const venueData = await api.getVenueByOwner(user.userId);
+      if (venueData && venueData.venueId) {
+        setVenue({
+          name: venueData.name || 'Sports Venue',
+          venueId: venueData.venueId
+        });
+
+        // Fetch real bookings from backend
+        const bookingsData = await api.getBookings(venueData.venueId);
+        if (bookingsData && Array.isArray(bookingsData)) {
+          // Transform backend data to match frontend structure
+          const transformedBookings = bookingsData.map(booking => ({
+            bookingId: booking.bookingId,
+            customerName: booking.customerName || 'Unknown Customer',
+            customerEmail: booking.customerEmail || 'No email',
+            customerPhone: booking.customerPhone || 'No phone',
+            venueName: venueData.name,
+            courtName: booking.courtBookings?.[0]?.courtName || 'Unknown Court',
+            courtType: booking.courtBookings?.[0]?.courtType || 'UNKNOWN',
+            date: booking.bookingDate ? new Date(booking.bookingDate).toISOString().split('T')[0] : 'Unknown Date',
+            startTime: booking.startTime || '00:00',
+            endTime: booking.endTime || '00:00',
+            duration: booking.duration || 0,
+            status: booking.status || 'PENDING',
+            totalCost: booking.totalCost || 0,
+            courtCost: booking.totalCost || 0, // Simplified for now
+            equipmentCost: 0, // Will be calculated from equipment bookings
+            specialRequests: booking.specialRequests || '',
+            bookingDate: booking.createdAt || new Date().toISOString(),
+            paymentStatus: 'PENDING', // Default for now
+            equipmentBookings: booking.equipmentBookings?.map(eq => ({
+              name: eq.equipmentName || 'Unknown Equipment',
+              quantity: eq.quantity || 0,
+              cost: eq.totalPrice || 0
+            })) || []
+          }));
+          
+          setBookings(transformedBookings);
+        } else {
+          setBookings([]);
         }
-      ]);
+      } else {
+        setVenue(null);
+        setBookings([]);
+      }
     } catch (error) {
       console.error('Error fetching venue and bookings:', error);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -202,8 +179,8 @@ export default function BookingManagement() {
 
   const handleStatusChange = async (bookingId, newStatus) => {
     try {
-      // TODO: Replace with real API call
-      // await api.updateBookingStatus(bookingId, newStatus);
+      // Call real API to update booking status
+      await api.updateBookingStatus(bookingId, newStatus);
       
       // Update local state
       setBookings(prev => prev.map(booking => 
@@ -213,7 +190,69 @@ export default function BookingManagement() {
       ));
     } catch (error) {
       console.error('Error updating booking status:', error);
+      alert('Failed to update booking status. Please try again.');
     }
+  };
+
+  // Handle WebSocket messages for real-time updates
+  const handleWebSocketMessage = (type, data) => {
+    switch (type) {
+      case 'NEW_BOOKING':
+        // Add new booking to the list
+        const newBooking = transformBackendBooking(data);
+        setBookings(prev => [newBooking, ...prev]);
+        break;
+      
+      case 'STATUS_UPDATE':
+        // Update booking status in real-time
+        setBookings(prev => prev.map(booking => 
+          booking.bookingId === data.bookingId 
+            ? { ...booking, status: data.status }
+            : booking
+        ));
+        break;
+      
+      case 'BOOKING_CANCELLED':
+        // Remove cancelled booking or mark as cancelled
+        setBookings(prev => prev.map(booking => 
+          booking.bookingId === data.bookingId 
+            ? { ...booking, status: 'CANCELLED' }
+            : booking
+        ));
+        break;
+      
+      default:
+        console.log('Unknown WebSocket message type:', type);
+    }
+  };
+
+  // Helper function to transform backend booking data
+  const transformBackendBooking = (backendBooking) => {
+    return {
+      bookingId: backendBooking.bookingId,
+      customerName: backendBooking.customerName || 'Unknown Customer',
+      customerEmail: backendBooking.customerEmail || 'No email',
+      customerPhone: backendBooking.customerPhone || 'No phone',
+      venueName: venue?.name || 'Sports Venue',
+      courtName: backendBooking.courtBookings?.[0]?.courtName || 'Unknown Court',
+      courtType: backendBooking.courtBookings?.[0]?.courtType || 'UNKNOWN',
+      date: backendBooking.bookingDate ? new Date(backendBooking.bookingDate).toISOString().split('T')[0] : 'Unknown Date',
+      startTime: backendBooking.startTime || '00:00',
+      endTime: backendBooking.endTime || '00:00',
+      duration: backendBooking.duration || 0,
+      status: backendBooking.status || 'PENDING',
+      totalCost: backendBooking.totalCost || 0,
+      courtCost: backendBooking.totalCost || 0,
+      equipmentCost: 0,
+      specialRequests: backendBooking.specialRequests || '',
+      bookingDate: backendBooking.createdAt || new Date().toISOString(),
+      paymentStatus: 'PENDING',
+      equipmentBookings: backendBooking.equipmentBookings?.map(eq => ({
+        name: eq.equipmentName || 'Unknown Equipment',
+        quantity: eq.quantity || 0,
+        cost: eq.totalPrice || 0
+      })) || []
+    };
   };
 
   const getStatusColor = (status) => {
