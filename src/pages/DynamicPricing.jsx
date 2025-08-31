@@ -51,7 +51,22 @@ export default function DynamicPricing() {
     }
   };
 
-
+  const fetchCurrentPricingSettings = async (courtId) => {
+    try {
+      const currentSettings = await api.getDynamicPricingSettings(courtId);
+      setPricingForm({
+        dynamicPricingEnabled: currentSettings.dynamicPricingEnabled || false,
+        peakHourStart: currentSettings.peakHourStart || '18:00',
+        peakHourEnd: currentSettings.peakHourEnd || '22:00',
+        peakHourMultiplier: currentSettings.peakHourMultiplier || 1.5,
+        offPeakMultiplier: currentSettings.offPeakMultiplier || 0.8,
+        weekendMultiplier: currentSettings.weekendMultiplier || 1.2
+      });
+    } catch (err) {
+      console.error('Error fetching current pricing settings:', err);
+      // Keep current form state, don't show alert to avoid spam
+    }
+  };
 
   const initializePricingForm = () => {
     if (selectedCourt) {
@@ -63,20 +78,43 @@ export default function DynamicPricing() {
         offPeakMultiplier: selectedCourt.offPeakMultiplier || 0.8,
         weekendMultiplier: selectedCourt.weekendMultiplier || 1.2
       });
+      
+      // Also fetch the latest settings from backend
+      fetchCurrentPricingSettings(selectedCourt.courtId);
     }
   };
 
   const handleUpdatePricing = async () => {
     try {
-      await api.updateDynamicPricing(selectedCourt.courtId, pricingForm);
-      setShowSettingsModal(false);
-      alert('Dynamic pricing settings updated successfully');
+      setLoading(true);
+      const response = await api.updateDynamicPricing(selectedCourt.courtId, pricingForm);
       
-      // Refresh court data
-      fetchCourts();
+      // Check if the response indicates success
+      if (response && response.success) {
+        setShowSettingsModal(false);
+        alert(response.message || 'Dynamic pricing settings updated successfully');
+        
+        // Refresh court data and pricing form
+        await fetchCourts();
+        if (selectedCourt) {
+          await fetchCurrentPricingSettings(selectedCourt.courtId);
+        }
+      } else {
+        // Handle unsuccessful response
+        const errorMessage = response?.message || 'Failed to update pricing settings';
+        alert(errorMessage);
+      }
     } catch (err) {
       console.error('Error updating pricing settings:', err);
-      alert('Failed to update pricing settings');
+      
+      // Show more specific error message
+      let errorMessage = 'Failed to update pricing settings';
+      if (err.message) {
+        errorMessage += `: ${err.message}`;
+      }
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
