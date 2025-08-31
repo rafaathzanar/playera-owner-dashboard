@@ -13,11 +13,11 @@ class WebSocketService {
   connect() {
     if (this.isConnected) return;
 
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS("http://localhost:8080/ws");
     this.stompClient = new Client({
       webSocketFactory: () => socket,
       debug: (str) => {
-        console.log('STOMP Debug:', str);
+        console.log("STOMP Debug:", str);
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
@@ -25,23 +25,23 @@ class WebSocketService {
     });
 
     this.stompClient.onConnect = (frame) => {
-      console.log('Connected to WebSocket:', frame);
+      console.log("Connected to WebSocket:", frame);
       this.isConnected = true;
       this.reconnectAttempts = 0;
     };
 
     this.stompClient.onStompError = (frame) => {
-      console.error('STOMP error:', frame);
+      console.error("STOMP error:", frame);
       this.isConnected = false;
     };
 
     this.stompClient.onWebSocketError = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
       this.isConnected = false;
     };
 
     this.stompClient.onWebSocketClose = () => {
-      console.log('WebSocket connection closed');
+      console.log("WebSocket connection closed");
       this.isConnected = false;
     };
 
@@ -57,7 +57,7 @@ class WebSocketService {
 
   subscribeToVenueBookings(venueId, onMessage) {
     if (!this.isConnected || !this.stompClient) {
-      console.log('WebSocket not connected, attempting to connect...');
+      console.log("WebSocket not connected, attempting to connect...");
       this.connect();
       // Wait for connection before subscribing
       setTimeout(() => {
@@ -67,46 +67,58 @@ class WebSocketService {
     }
 
     // Subscribe to new bookings
-    this.stompClient.subscribe(`/topic/venue/${venueId}/bookings/new`, (message) => {
-      try {
-        const data = JSON.parse(message.body);
-        console.log('New booking received:', data);
-        onMessage('NEW_BOOKING', data);
-      } catch (error) {
-        console.error('Error parsing new booking message:', error);
+    this.stompClient.subscribe(
+      `/topic/venue/${venueId}/bookings/new`,
+      (message) => {
+        try {
+          const data = JSON.parse(message.body);
+          console.log("New booking received:", data);
+          onMessage("NEW_BOOKING", data);
+        } catch (error) {
+          console.error("Error parsing new booking message:", error);
+        }
       }
-    });
+    );
 
     // Subscribe to status updates
-    this.stompClient.subscribe(`/topic/venue/${venueId}/bookings/+/status`, (message) => {
-      try {
-        const data = JSON.parse(message.body);
-        console.log('Status update received:', data);
-        onMessage('STATUS_UPDATE', data);
-      } catch (error) {
-        console.error('Error parsing status update message:', error);
+    this.stompClient.subscribe(
+      `/topic/venue/${venueId}/bookings/+/status`,
+      (message) => {
+        try {
+          const data = JSON.parse(message.body);
+          console.log("Status update received:", data);
+          onMessage("STATUS_UPDATE", data);
+        } catch (error) {
+          console.error("Error parsing status update message:", error);
+        }
       }
-    });
+    );
 
     // Subscribe to cancellations
-    this.stompClient.subscribe(`/topic/venue/${venueId}/bookings/+/cancelled`, (message) => {
-      try {
-        const data = JSON.parse(message.body);
-        console.log('Cancellation received:', data);
-        onMessage('BOOKING_CANCELLED', data);
-      } catch (error) {
-        console.error('Error parsing cancellation message:', error);
+    this.stompClient.subscribe(
+      `/topic/venue/${venueId}/bookings/+/cancelled`,
+      (message) => {
+        try {
+          const data = JSON.parse(message.body);
+          console.log("Cancellation received:", data);
+          onMessage("BOOKING_CANCELLED", data);
+        } catch (error) {
+          console.error("Error parsing cancellation message:", error);
+        }
       }
-    });
+    );
   }
 
   handleReconnect(venueId, onMessage) {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-      
-      console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
-      
+      const delay =
+        this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+
+      console.log(
+        `Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`
+      );
+
       setTimeout(() => {
         this.connect();
         setTimeout(() => {
@@ -114,7 +126,7 @@ class WebSocketService {
         }, 1000);
       }, delay);
     } else {
-      console.error('Max reconnection attempts reached');
+      console.error("Max reconnection attempts reached");
     }
   }
 
@@ -122,10 +134,10 @@ class WebSocketService {
     if (this.isConnected && this.stompClient) {
       this.stompClient.publish({
         destination,
-        body: JSON.stringify(message)
+        body: JSON.stringify(message),
       });
     } else {
-      console.error('WebSocket not connected');
+      console.error("WebSocket not connected");
     }
   }
 }
