@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
-  CurrencyDollarIcon, 
-  ClockIcon, 
+  CurrencyDollarIcon,
+  ClockIcon,
   CogIcon
 } from '@heroicons/react/24/outline';
 import api from '../services/api';
@@ -132,8 +132,8 @@ export default function DynamicPricing() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Loading dynamic pricing...</p>
-        </div>
-      </div>
+              </div>
+            </div>
     );
   }
 
@@ -143,11 +143,11 @@ export default function DynamicPricing() {
         <div className="text-center">
           <div className="h-12 w-12 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
           <span className="text-white text-2xl font-bold">!</span>
-        </div>
+                </div>
           <p className="text-lg text-red-600">{error}</p>
           <button onClick={fetchCourts} className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
             Retry
-          </button>
+              </button>
         </div>
       </div>
     );
@@ -169,17 +169,17 @@ export default function DynamicPricing() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dynamic Pricing Management</h1>
-          <p className="text-gray-600 mt-2">
+              <p className="text-gray-600 mt-2">
             Configure dynamic pricing rules to maximize revenue based on demand, time, and special events
-          </p>
-        </div>
+              </p>
+            </div>
 
         {/* Court Selection */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Select Court</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {courts.map((court) => (
-              <button
+            <button
                 key={court.courtId}
                 onClick={() => setSelectedCourt(court)}
                 className={`p-4 rounded-lg border-2 text-left transition-colors ${
@@ -200,7 +200,7 @@ export default function DynamicPricing() {
                     {court.dynamicPricingEnabled ? 'Dynamic Pricing Enabled' : 'Standard Pricing'}
                   </span>
                 </div>
-              </button>
+            </button>
             ))}
           </div>
         </div>
@@ -213,14 +213,14 @@ export default function DynamicPricing() {
                 <h2 className="text-lg font-medium text-gray-900">
                   {selectedCourt.courtName} - Pricing Overview
                 </h2>
-                <button
+            <button
                   onClick={() => setShowSettingsModal(true)}
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
                 >
                   <CogIcon className="h-5 w-5 mr-2" />
                   Configure Pricing
-                </button>
-              </div>
+            </button>
+        </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Base Price */}
@@ -229,7 +229,7 @@ export default function DynamicPricing() {
                   <h3 className="font-medium text-gray-900">Base Price</h3>
                   <p className="text-2xl font-bold text-gray-900">${selectedCourt.pricePerHour}</p>
                   <p className="text-sm text-gray-600">per hour</p>
-                </div>
+            </div>
 
                 {/* Peak Hours */}
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
@@ -246,13 +246,13 @@ export default function DynamicPricing() {
                       LKR {(selectedCourt.pricePerHour * (selectedCourt.peakHourMultiplier || 1.5)).toFixed(2)}/hour
                     </p>
                   )}
-                </div>
+                  </div>
 
                 {/* Weekend Pricing */}
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="h-8 w-8 bg-blue-600 rounded-full mx-auto mb-2 flex items-center justify-center">
                     <span className="text-white text-sm font-bold">W</span>
-                  </div>
+                    </div>
                   <h3 className="font-medium text-gray-900">Weekend Pricing</h3>
                   <p className="text-lg font-semibold text-blue-900">
                     {selectedCourt.weekendMultiplier ? `${selectedCourt.weekendMultiplier}x` : '1.2x'} multiplier
@@ -263,9 +263,9 @@ export default function DynamicPricing() {
                       LKR {(selectedCourt.pricePerHour * (selectedCourt.weekendMultiplier || 1.2)).toFixed(2)}/hour
                     </p>
                   )}
-                </div>
-              </div>
-            </div>
+                  </div>
+                    </div>
+                  </div>
 
             {/* Pricing Examples */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -286,34 +286,34 @@ export default function DynamicPricing() {
                       <div>
                         <span className="font-medium text-gray-900">9:00 AM</span>
                         <p className="text-xs text-gray-500">Off-peak hours</p>
-                      </div>
+                    </div>
                       <div className="text-right">
                         <span className="font-semibold text-gray-900">LKR {getRealTimePricingExamples().weekdayOffPeak}</span>
                         <p className="text-xs text-gray-500">per hour</p>
-                      </div>
-                    </div>
+                  </div>
+                </div>
                     <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
                       <div>
                         <span className="font-medium text-orange-900">7:00 PM</span>
                         <p className="text-xs text-orange-600">Peak hours ({pricingForm.peakHourMultiplier}x)</p>
-                      </div>
+                </div>
                       <div className="text-right">
                         <span className="font-semibold text-orange-900">LKR {getRealTimePricingExamples().weekdayPeak}</span>
                         <p className="text-xs text-orange-600">per hour</p>
-                      </div>
-                    </div>
+            </div>
+          </div>
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <div>
+                    <div>
                         <span className="font-medium text-gray-900">10:00 PM</span>
                         <p className="text-xs text-gray-500">Off-peak hours</p>
-                      </div>
+                    </div>
                       <div className="text-right">
                         <span className="font-semibold text-gray-900">LKR {getRealTimePricingExamples().weekdayLate}</span>
                         <p className="text-xs text-gray-500">per hour</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
+                        </div>
+                      </div>
 
                 {/* Weekend Examples */}
                 <div>
@@ -333,12 +333,12 @@ export default function DynamicPricing() {
                       <div>
                         <span className="font-medium text-purple-900">8:00 PM</span>
                         <p className="text-xs text-purple-600">Peak + Weekend ({pricingForm.peakHourMultiplier}x × {pricingForm.weekendMultiplier}x)</p>
-                      </div>
+                        </div>
                       <div className="text-right">
                         <span className="font-semibold text-purple-900">LKR {getRealTimePricingExamples().weekendPeak}</span>
                         <p className="text-xs text-purple-600">per hour</p>
+                        </div>
                       </div>
-                    </div>
                     <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                       <div>
                         <span className="font-medium text-blue-900">2:00 PM</span>
@@ -348,10 +348,10 @@ export default function DynamicPricing() {
                         <span className="font-semibold text-blue-900">LKR {getRealTimePricingExamples().weekendAfternoon}</span>
                         <p className="text-xs text-blue-600">per hour</p>
                       </div>
+                        </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Pricing Summary */}
               {pricingForm.dynamicPricingEnabled && (
@@ -361,7 +361,7 @@ export default function DynamicPricing() {
                     <div>
                       <span className="text-green-700">Peak Hours:</span>
                       <span className="font-medium text-green-900 ml-2">{pricingForm.peakHourStart} - {pricingForm.peakHourEnd}</span>
-                    </div>
+                      </div>
                     <div>
                       <span className="text-green-700">Peak Multiplier:</span>
                       <span className="font-medium text-green-900 ml-2">{pricingForm.peakHourMultiplier}x</span>
@@ -369,11 +369,11 @@ export default function DynamicPricing() {
                     <div>
                       <span className="text-green-700">Weekend Multiplier:</span>
                       <span className="font-medium text-green-900 ml-2">{pricingForm.weekendMultiplier}x</span>
-                    </div>
-                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+          </div>
+        )}
+      </div>
 
 
           </>

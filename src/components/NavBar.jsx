@@ -9,7 +9,8 @@ import {
   ChartBarIcon,
   Bars3Icon,
   XMarkIcon,
-  ClockIcon
+  ClockIcon,
+  WrenchScrewdriverIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -40,6 +41,7 @@ export default function NavBar() {
     { name: "Venues", href: "/venues", icon: BuildingOfficeIcon },
     { name: "Time Slots", href: venue ? `/venues/${venue.venueId}/timeslots` : "/venues", icon: ClockIcon },
     { name: "Dynamic Pricing", href: venue ? `/venues/${venue.venueId}/pricing` : "/venues", icon: CurrencyDollarIcon },
+    { name: "Equipment", href: venue ? `/venues/${venue.venueId}/equipment` : "/venues", icon: WrenchScrewdriverIcon },
     { name: "Bookings", href: "/bookings", icon: CalendarIcon },
     { name: "Analytics", href: "/analytics", icon: ChartBarIcon },
   ];

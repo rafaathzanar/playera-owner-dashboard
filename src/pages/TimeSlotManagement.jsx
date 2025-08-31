@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  CalendarIcon, 
-  ClockIcon, 
+  CalendarIcon,
+  ClockIcon,
   XMarkIcon, 
   PlusIcon,
   TrashIcon,
@@ -32,7 +32,7 @@ export default function TimeSlotManagement() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showRecurringBlockModal, setShowRecurringBlockModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  
+
   // Form states
   const [blockForm, setBlockForm] = useState({
     startTime: '',
@@ -40,7 +40,7 @@ export default function TimeSlotManagement() {
     reason: '',
     isMaintenance: false
   });
-  
+
   const [recurringBlockForm, setRecurringBlockForm] = useState({
     startDate: '',
     endDate: '',
@@ -50,7 +50,7 @@ export default function TimeSlotManagement() {
     isMaintenance: false,
     recurringDays: []
   });
-  
+
   const [settingsForm, setSettingsForm] = useState({
     openingTime: '',
     closingTime: '',
@@ -459,7 +459,7 @@ export default function TimeSlotManagement() {
     );
   }
 
-  return (
+    return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -679,49 +679,49 @@ export default function TimeSlotManagement() {
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Block Time Slot</h3>
-                <button
+            <button
                   onClick={() => setShowBlockModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
+              className="text-gray-400 hover:text-gray-600"
+            >
                   <XMarkIcon className="h-6 w-6" />
-                </button>
-              </div>
-              
+            </button>
+          </div>
+
               <div className="space-y-4">
-                <div>
+              <div>
                   <label className="block text-sm font-medium text-gray-700">Start Time</label>
-                  <input
-                    type="time"
-                    value={blockForm.startTime}
+                <input
+                  type="time"
+                  value={blockForm.startTime}
                     onChange={(e) => setBlockForm({...blockForm, startTime: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                  />
-                </div>
-                
-                <div>
+                />
+              </div>
+
+              <div>
                   <label className="block text-sm font-medium text-gray-700">End Time</label>
-                  <input
-                    type="time"
-                    value={blockForm.endTime}
+                <input
+                  type="time"
+                  value={blockForm.endTime}
                     onChange={(e) => setBlockForm({...blockForm, endTime: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                  />
-                </div>
-                
-                <div>
+              />
+            </div>
+
+            <div>
                   <label className="block text-sm font-medium text-gray-700">Reason</label>
-                  <input
+                <input
                     type="text"
                     value={blockForm.reason}
                     onChange={(e) => setBlockForm({...blockForm, reason: e.target.value})}
                     placeholder="e.g., Maintenance, Private event"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                   />
-                </div>
-                
+            </div>
+
                 <div className="flex items-center">
-                  <input
-                    type="checkbox"
+                      <input
+                        type="checkbox"
                     id="maintenance"
                     checked={blockForm.isMaintenance}
                     onChange={(e) => setBlockForm({...blockForm, isMaintenance: e.target.checked})}
@@ -729,27 +729,27 @@ export default function TimeSlotManagement() {
                   />
                   <label htmlFor="maintenance" className="ml-2 block text-sm text-gray-900">
                     Mark as maintenance
-                  </label>
+                    </label>
                 </div>
               </div>
-              
+
               <div className="flex space-x-3 mt-6">
-                <button
+              <button
                   onClick={() => setShowBlockModal(false)}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
+              >
+                Cancel
+              </button>
+              <button
                   onClick={handleBlockSlot}
                   className="flex-1 px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
-                >
+              >
                   Block Slot
-                </button>
-              </div>
+              </button>
             </div>
-          </div>
         </div>
+      </div>
+      </div>
       )}
 
       {/* Recurring Block Modal */}
@@ -759,23 +759,23 @@ export default function TimeSlotManagement() {
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Block Recurring Time Slots</h3>
-                <button
+              <button
                   onClick={closeRecurringBlockModal}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <XMarkIcon className="h-6 w-6" />
-                </button>
-              </div>
+              </button>
+            </div>
               
               {/* Instructions */}
               <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-800">
                   <strong>Instructions:</strong> Select a date range, time period, and recurring days to block multiple time slots automatically.
                 </p>
-              </div>
-              
+        </div>
+
               <div className="space-y-4">
-                <div>
+            <div>
                   <label className="block text-sm font-medium text-gray-700">Start Date *</label>
                   <input
                     type="date"
@@ -785,19 +785,19 @@ export default function TimeSlotManagement() {
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                     required
                   />
-                </div>
-                
-                <div>
+            </div>
+
+            <div>
                   <label className="block text-sm font-medium text-gray-700">End Date *</label>
-                  <input
-                    type="date"
+              <input
+                type="date"
                     value={recurringBlockForm.endDate}
                     onChange={(e) => setRecurringBlockForm({...recurringBlockForm, endDate: e.target.value})}
                     min={recurringBlockForm.startDate || new Date().toISOString().split('T')[0]}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                     required
-                  />
-                </div>
+              />
+            </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Start Time *</label>
@@ -808,8 +808,8 @@ export default function TimeSlotManagement() {
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                     required
                   />
-                </div>
-                
+          </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700">End Time *</label>
                   <input
@@ -844,8 +844,8 @@ export default function TimeSlotManagement() {
                   <label htmlFor="recurringMaintenance" className="ml-2 block text-sm text-gray-900">
                     Mark as maintenance
                   </label>
-                </div>
-                
+        </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Recurring Days *</label>
                   <p className="text-xs text-gray-500 mb-2">Select the days of the week when this block should apply</p>
@@ -869,12 +869,12 @@ export default function TimeSlotManagement() {
                         {day}
                       </button>
                     ))}
-                  </div>
+                    </div>
                   {recurringBlockForm.recurringDays.length === 0 && (
                     <p className="text-xs text-red-500 mt-1">Please select at least one day</p>
                   )}
-                </div>
-              </div>
+                    </div>
+                      </div>
               
               <div className="flex space-x-3 mt-6">
                 <button
@@ -883,7 +883,7 @@ export default function TimeSlotManagement() {
                 >
                   Cancel
                 </button>
-                <button
+                      <button
                   onClick={handleRecurringBlock}
                   disabled={!recurringBlockForm.startDate || !recurringBlockForm.endDate || !recurringBlockForm.startTime || !recurringBlockForm.endTime || !recurringBlockForm.reason.trim() || recurringBlockForm.recurringDays.length === 0}
                   className={`flex-1 px-4 py-2 border border-transparent rounded-md text-sm font-medium ${
@@ -893,12 +893,12 @@ export default function TimeSlotManagement() {
                   }`}
                 >
                   Block Recurring
-                </button>
+                      </button>
+                  </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Settings Modal */}
       {showSettingsModal && (
@@ -913,7 +913,7 @@ export default function TimeSlotManagement() {
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
-              </div>
+          </div>
               
               <div className="space-y-4">
                 <div className="mb-4 p-3 bg-blue-50 rounded-lg">
@@ -943,7 +943,7 @@ export default function TimeSlotManagement() {
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                     required
                   />
-                </div>
+              </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Slot Duration (minutes) *</label>
@@ -958,9 +958,9 @@ export default function TimeSlotManagement() {
                     <option value={90}>1.5 hours</option>
                     <option value={120}>2 hours</option>
                   </select>
-                </div>
-                
-                <div className="flex items-center">
+            </div>
+
+              <div className="flex items-center">
                   <input
                     type="checkbox"
                     id="weekends"
@@ -984,9 +984,9 @@ export default function TimeSlotManagement() {
                   <label htmlFor="holidays" className="ml-2 block text-sm text-gray-900">
                     Active on holidays
                   </label>
-                </div>
-                
-                <div className="flex items-center">
+            </div>
+
+              <div className="flex items-center">
                   <input
                     type="checkbox"
                     id="breakTime"
@@ -1009,7 +1009,7 @@ export default function TimeSlotManagement() {
                         onChange={(e) => setSettingsForm({...settingsForm, breakStartTime: e.target.value})}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                       />
-                    </div>
+                </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Break End Time</label>
@@ -1019,11 +1019,11 @@ export default function TimeSlotManagement() {
                         onChange={(e) => setSettingsForm({...settingsForm, breakEndTime: e.target.value})}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                       />
-                    </div>
+              </div>
                   </>
                 )}
-              </div>
-              
+            </div>
+
               <div className="flex space-x-3 mt-6">
                 <button
                   onClick={() => setShowSettingsModal(false)}
@@ -1037,11 +1037,11 @@ export default function TimeSlotManagement() {
                 >
                   Update Settings
                 </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }

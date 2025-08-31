@@ -297,6 +297,13 @@ export default function Dashboard() {
                   color="bg-purple-500"
                 />
                 <QuickActionCard
+                  title="Manage Equipment"
+                  description="Add and manage rental equipment for your courts"
+                  icon={StarIcon}
+                  href={`/venues/${venue.venueId}/equipment`}
+                  color="bg-green-500"
+                />
+                <QuickActionCard
                   title="View Analytics"
                   description="Analyze revenue, occupancy, and performance metrics"
                   icon={ChartBarIcon}
