@@ -26,6 +26,7 @@ export default function TimeSlotManagement() {
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
   
   // Modal states
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -170,7 +171,64 @@ export default function TimeSlotManagement() {
   };
 
   const handleRecurringBlock = async () => {
+    // Validate required fields
+    if (!recurringBlockForm.startDate) {
+      alert('Please select a start date');
+      return;
+    }
+    
+    if (!recurringBlockForm.endDate) {
+      alert('Please select an end date');
+      return;
+    }
+    
+    if (!recurringBlockForm.startTime) {
+      alert('Please select a start time');
+      return;
+    }
+    
+    if (!recurringBlockForm.endTime) {
+      alert('Please select an end time');
+      return;
+    }
+    
+    if (!recurringBlockForm.reason.trim()) {
+      alert('Please provide a reason for blocking');
+      return;
+    }
+    
+    if (recurringBlockForm.recurringDays.length === 0) {
+      alert('Please select at least one recurring day');
+      return;
+    }
+    
+    // Validate date logic
+    const startDate = new Date(recurringBlockForm.startDate);
+    const endDate = new Date(recurringBlockForm.endDate);
+    
+    if (startDate > endDate) {
+      alert('End date must be after start date');
+      return;
+    }
+    
+    // Validate time logic
+    if (recurringBlockForm.startTime >= recurringBlockForm.endTime) {
+      alert('End time must be after start time');
+      return;
+    }
+    
     try {
+      console.log('Blocking recurring slots with data:', {
+        courtId: selectedCourt.courtId,
+        startDate: recurringBlockForm.startDate,
+        endDate: recurringBlockForm.endDate,
+        startTime: recurringBlockForm.startTime,
+        endTime: recurringBlockForm.endTime,
+        reason: recurringBlockForm.reason,
+        isMaintenance: recurringBlockForm.isMaintenance,
+        recurringDays: recurringBlockForm.recurringDays
+      });
+      
       await api.blockRecurringTimeSlots(
         selectedCourt.courtId,
         recurringBlockForm.startDate,
@@ -192,10 +250,13 @@ export default function TimeSlotManagement() {
         isMaintenance: false,
         recurringDays: []
       });
+      
+      setSuccessMessage('Recurring time slots blocked successfully!');
+      setTimeout(() => setSuccessMessage(''), 5000); // Clear after 5 seconds
       fetchTimeSlots();
     } catch (err) {
       console.error('Error blocking recurring slots:', err);
-      alert('Failed to block recurring time slots');
+      alert('Failed to block recurring time slots: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -227,6 +288,40 @@ export default function TimeSlotManagement() {
       console.error('Error generating slots:', err);
       alert('Failed to generate time slots');
     }
+  };
+
+  const openRecurringBlockModal = () => {
+    // Clear any previous success message
+    setSuccessMessage('');
+    
+    // Initialize form with sensible defaults
+    const today = new Date();
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    setRecurringBlockForm({
+      startDate: today.toISOString().split('T')[0],
+      endDate: nextWeek.toISOString().split('T')[0],
+      startTime: '18:00', // Default to 6 PM
+      endTime: '20:00',   // Default to 8 PM
+      reason: '',
+      isMaintenance: false,
+      recurringDays: [1, 3, 5] // Default to Mon, Wed, Fri
+    });
+    
+    setShowRecurringBlockModal(true);
+  };
+
+  const closeRecurringBlockModal = () => {
+    setShowRecurringBlockModal(false);
+    setRecurringBlockForm({
+      startDate: '',
+      endDate: '',
+      startTime: '',
+      endTime: '',
+      reason: '',
+      isMaintenance: false,
+      recurringDays: []
+    });
   };
 
   const handleUpdateSettings = async () => {
@@ -375,6 +470,16 @@ export default function TimeSlotManagement() {
           </p>
         </div>
 
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center">
+              <CheckIcon className="h-5 w-5 text-green-600 mr-2" />
+              <p className="text-green-800 font-medium">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
         {/* Court Selection */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Select Court</h2>
@@ -467,7 +572,7 @@ export default function TimeSlotManagement() {
                       Block Slot
                     </button>
                     <button
-                      onClick={() => setShowRecurringBlockModal(true)}
+                      onClick={openRecurringBlockModal}
                       className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700"
                     >
                       <CalendarIcon className="h-5 w-5 mr-2" />
@@ -655,62 +760,76 @@ export default function TimeSlotManagement() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Block Recurring Time Slots</h3>
                 <button
-                  onClick={() => setShowRecurringBlockModal(false)}
+                  onClick={closeRecurringBlockModal}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
               
+              {/* Instructions */}
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>Instructions:</strong> Select a date range, time period, and recurring days to block multiple time slots automatically.
+                </p>
+              </div>
+              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                  <label className="block text-sm font-medium text-gray-700">Start Date *</label>
                   <input
                     type="date"
                     value={recurringBlockForm.startDate}
                     onChange={(e) => setRecurringBlockForm({...recurringBlockForm, startDate: e.target.value})}
+                    min={new Date().toISOString().split('T')[0]}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">End Date</label>
+                  <label className="block text-sm font-medium text-gray-700">End Date *</label>
                   <input
                     type="date"
                     value={recurringBlockForm.endDate}
                     onChange={(e) => setRecurringBlockForm({...recurringBlockForm, endDate: e.target.value})}
+                    min={recurringBlockForm.startDate || new Date().toISOString().split('T')[0]}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Start Time</label>
+                  <label className="block text-sm font-medium text-gray-700">Start Time *</label>
                   <input
                     type="time"
                     value={recurringBlockForm.startTime}
                     onChange={(e) => setRecurringBlockForm({...recurringBlockForm, startTime: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">End Time</label>
+                  <label className="block text-sm font-medium text-gray-700">End Time *</label>
                   <input
                     type="time"
                     value={recurringBlockForm.endTime}
                     onChange={(e) => setRecurringBlockForm({...recurringBlockForm, endTime: e.target.value})}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Reason</label>
+                  <label className="block text-sm font-medium text-gray-700">Reason *</label>
                   <input
                     type="text"
                     value={recurringBlockForm.reason}
                     onChange={(e) => setRecurringBlockForm({...recurringBlockForm, reason: e.target.value})}
-                    placeholder="e.g., Weekly maintenance"
+                    placeholder="e.g., Weekly maintenance, Private events"
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                    required
                   />
                 </div>
                 
@@ -728,7 +847,8 @@ export default function TimeSlotManagement() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Recurring Days</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Recurring Days *</label>
+                  <p className="text-xs text-gray-500 mb-2">Select the days of the week when this block should apply</p>
                   <div className="grid grid-cols-7 gap-2">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
                       <button
@@ -740,7 +860,7 @@ export default function TimeSlotManagement() {
                             : [...recurringBlockForm.recurringDays, index];
                           setRecurringBlockForm({...recurringBlockForm, recurringDays: newDays});
                         }}
-                        className={`p-2 text-xs rounded ${
+                        className={`p-2 text-xs rounded transition-colors ${
                           recurringBlockForm.recurringDays.includes(index)
                             ? 'bg-orange-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -750,19 +870,27 @@ export default function TimeSlotManagement() {
                       </button>
                     ))}
                   </div>
+                  {recurringBlockForm.recurringDays.length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">Please select at least one day</p>
+                  )}
                 </div>
               </div>
               
               <div className="flex space-x-3 mt-6">
                 <button
-                  onClick={() => setShowRecurringBlockModal(false)}
+                  onClick={closeRecurringBlockModal}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleRecurringBlock}
-                  className="flex-1 px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
+                  disabled={!recurringBlockForm.startDate || !recurringBlockForm.endDate || !recurringBlockForm.startTime || !recurringBlockForm.endTime || !recurringBlockForm.reason.trim() || recurringBlockForm.recurringDays.length === 0}
+                  className={`flex-1 px-4 py-2 border border-transparent rounded-md text-sm font-medium ${
+                    !recurringBlockForm.startDate || !recurringBlockForm.endDate || !recurringBlockForm.startTime || !recurringBlockForm.endTime || !recurringBlockForm.reason.trim() || recurringBlockForm.recurringDays.length === 0
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-orange-600 hover:bg-orange-700 text-white'
+                  }`}
                 >
                   Block Recurring
                 </button>
@@ -917,3 +1045,4 @@ export default function TimeSlotManagement() {
     </div>
   );
 }
+

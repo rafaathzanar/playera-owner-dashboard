@@ -8,8 +8,7 @@ import {
   EnvelopeIcon,
   GlobeAltIcon,
   CurrencyDollarIcon,
-  ClockIcon,
-  CogIcon
+  ClockIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
@@ -36,62 +35,21 @@ export default function AddVenue() {
     status: 'ACTIVE'
   });
 
-  // Amenities
-  const [amenities, setAmenities] = useState({
-    parkingAvailable: false,
-    foodAvailable: false,
-    changingRoomsAvailable: false,
-    showerAvailable: false,
-    wifiAvailable: false
-  });
 
-  // Business Hours & Pricing
+
+  // Business Hours
   const [businessHours, setBusinessHours] = useState({
-    openingHours: '6:00 AM - 11:00 PM',
-    basePrice: '',
-    cancellationPolicy: '',
-    refundPolicy: ''
-  });
-
-  // Dynamic Pricing
-  const [dynamicPricing, setDynamicPricing] = useState({
-    dynamicPricingEnabled: false,
-    peakHourMultiplier: 1.5,
-    offPeakMultiplier: 0.8,
-    weekendMultiplier: 1.2,
-    holidayMultiplier: 1.3,
-    peakHourStart: '18:00',
-    peakHourEnd: '22:00'
-  });
-
-  // Booking Rules
-  const [bookingRules, setBookingRules] = useState({
-    autoApprovalEnabled: false,
-    minAdvanceBookingHours: 24,
-    maxAdvanceBookingDays: 30,
-    earliestBookingTime: '06:00',
-    latestBookingTime: '23:00',
-    commissionRate: 0.10
+    openingHours: '6:00 AM - 11:00 PM'
   });
 
   const handleBasicInfoChange = (field, value) => {
     setBasicInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAmenitiesChange = (field, value) => {
-    setAmenities(prev => ({ ...prev, [field]: value }));
-  };
+
 
   const handleBusinessHoursChange = (field, value) => {
     setBusinessHours(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleDynamicPricingChange = (field, value) => {
-    setDynamicPricing(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleBookingRulesChange = (field, value) => {
-    setBookingRules(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -113,15 +71,8 @@ export default function AddVenue() {
         venueType: basicInfo.venueType,
         maxCapacity: basicInfo.maxCapacity ? parseInt(basicInfo.maxCapacity) : null,
         status: basicInfo.status,
-        parkingAvailable: amenities.parkingAvailable,
-        foodAvailable: amenities.foodAvailable,
-        changingRoomsAvailable: amenities.changingRoomsAvailable,
-        showerAvailable: amenities.showerAvailable,
-        wifiAvailable: amenities.wifiAvailable,
-        basePrice: businessHours.basePrice ? parseFloat(businessHours.basePrice) : null,
+
         openingHours: businessHours.openingHours,
-        cancellationPolicy: businessHours.cancellationPolicy,
-        refundPolicy: businessHours.refundPolicy,
         // Add owner ID to associate venue with the current user
         ownerId: user.userId
       };
@@ -144,10 +95,7 @@ export default function AddVenue() {
 
   const tabs = [
     { id: 'basic', name: 'Basic Information', icon: BuildingOfficeIcon },
-    { id: 'amenities', name: 'Amenities', icon: CogIcon },
-    { id: 'pricing', name: 'Pricing & Hours', icon: CurrencyDollarIcon },
-    { id: 'dynamic', name: 'Dynamic Pricing', icon: ClockIcon },
-    { id: 'booking', name: 'Booking Rules', icon: ClockIcon }
+    { id: 'hours', name: 'Business Hours', icon: ClockIcon }
   ];
 
   const renderTabContent = () => {
@@ -287,277 +235,43 @@ export default function AddVenue() {
           </div>
         );
 
-      case 'amenities':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Available Amenities</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(amenities).map(([key, value]) => (
-                <div key={key} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={key}
-                    checked={value}
-                    onChange={(e) => handleAmenitiesChange(key, e.target.checked)}
-                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor={key} className="ml-3 text-sm font-medium text-gray-700 capitalize">
-                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
 
-      case 'pricing':
+
+      case 'hours':
         return (
           <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <ClockIcon className="h-5 w-5 text-blue-600 mr-2" />
+                <h3 className="text-sm font-medium text-blue-900">Business Hours</h3>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                Set the general operating hours for your venue. Individual court hours and pricing will be configured separately.
+              </p>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Opening Hours
+                Opening Hours *
               </label>
               <input
                 type="text"
+                required
                 value={businessHours.openingHours}
                 onChange={(e) => handleBusinessHoursChange('openingHours', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="e.g., 6:00 AM - 11:00 PM"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Base Price per Hour (LKR)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={businessHours.basePrice}
-                onChange={(e) => handleBusinessHoursChange('basePrice', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="800.00"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cancellation Policy
-                </label>
-                <textarea
-                  rows={3}
-                  value={businessHours.cancellationPolicy}
-                  onChange={(e) => handleBusinessHoursChange('cancellationPolicy', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  placeholder="Describe your cancellation policy..."
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Refund Policy
-                </label>
-                <textarea
-                  rows={3}
-                  value={businessHours.refundPolicy}
-                  onChange={(e) => handleBusinessHoursChange('refundPolicy', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  placeholder="Describe your refund policy..."
-                />
-              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                This will be displayed to customers in the mobile app
+              </p>
             </div>
           </div>
         );
 
-      case 'dynamic':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="dynamicPricingEnabled"
-                checked={dynamicPricing.dynamicPricingEnabled}
-                onChange={(e) => handleDynamicPricingChange('dynamicPricingEnabled', e.target.checked)}
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-              />
-              <label htmlFor="dynamicPricingEnabled" className="ml-3 text-sm font-medium text-gray-700">
-                Enable Dynamic Pricing
-              </label>
-            </div>
 
-            {dynamicPricing.dynamicPricingEnabled && (
-              <div className="space-y-6 pl-6 border-l-2 border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Peak Hour Start
-                    </label>
-                    <input
-                      type="time"
-                      value={dynamicPricing.peakHourStart}
-                      onChange={(e) => handleDynamicPricingChange('peakHourStart', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Peak Hour End
-                    </label>
-                    <input
-                      type="time"
-                      value={dynamicPricing.peakHourEnd}
-                      onChange={(e) => handleDynamicPricingChange('peakHourEnd', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Peak Hour Multiplier
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={dynamicPricing.peakHourMultiplier}
-                      onChange={(e) => handleDynamicPricingChange('peakHourMultiplier', parseFloat(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Off-Peak Multiplier
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={dynamicPricing.offPeakMultiplier}
-                      onChange={(e) => handleDynamicPricingChange('offPeakMultiplier', parseFloat(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Weekend Multiplier
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={dynamicPricing.weekendMultiplier}
-                      onChange={(e) => handleDynamicPricingChange('weekendMultiplier', parseFloat(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Holiday Multiplier
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={dynamicPricing.holidayMultiplier}
-                      onChange={(e) => handleDynamicPricingChange('holidayMultiplier', parseFloat(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
-      case 'booking':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="autoApprovalEnabled"
-                checked={bookingRules.autoApprovalEnabled}
-                onChange={(e) => handleBookingRulesChange('autoApprovalEnabled', e.target.checked)}
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-              />
-              <label htmlFor="autoApprovalEnabled" className="ml-3 text-sm font-medium text-gray-700">
-                Enable Auto-Approval for Bookings
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Advance Booking (Hours)
-                </label>
-                <input
-                  type="number"
-                  value={bookingRules.minAdvanceBookingHours}
-                  onChange={(e) => handleBookingRulesChange('minAdvanceBookingHours', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Maximum Advance Booking (Days)
-                </label>
-                <input
-                  type="number"
-                  value={bookingRules.maxAdvanceBookingDays}
-                  onChange={(e) => handleBookingRulesChange('maxAdvanceBookingDays', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Earliest Booking Time
-                </label>
-                <input
-                  type="time"
-                  value={bookingRules.earliestBookingTime}
-                  onChange={(e) => handleBookingRulesChange('earliestBookingTime', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Latest Booking Time
-                </label>
-                <input
-                  type="time"
-                  value={bookingRules.latestBookingTime}
-                  onChange={(e) => handleBookingRulesChange('latestBookingTime', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Commission Rate (%)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={bookingRules.commissionRate}
-                onChange={(e) => handleBookingRulesChange('commissionRate', parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="0.10"
-              />
-            </div>
-          </div>
-        );
 
       default:
         return null;
