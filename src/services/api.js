@@ -303,14 +303,6 @@ class ApiService {
     );
   }
 
-  async updateCourtTimeSettings(courtId, settings) {
-    return await this.request(
-      `/courts/${courtId}/time-settings`,
-      "PUT",
-      settings
-    );
-  }
-
   // Logout
   async logout() {
     this.removeAuthToken();

@@ -242,7 +242,31 @@ export default function TimeSlotManagement() {
     }
 
     try {
-      await api.updateCourtTimeSettings(selectedCourt.courtId, settingsForm);
+      // Use the existing updateCourt endpoint instead of the non-existent time-settings endpoint
+      const courtUpdateData = {
+        courtName: selectedCourt.courtName,
+        type: selectedCourt.type,
+        capacity: selectedCourt.capacity,
+        pricePerHour: selectedCourt.pricePerHour,
+        description: selectedCourt.description || '',
+        isIndoor: selectedCourt.isIndoor || false,
+        isLighted: selectedCourt.isLighted || false,
+        isAirConditioned: selectedCourt.isAirConditioned || false,
+        minBookingDuration: selectedCourt.minBookingDuration || 60,
+        maxBookingDuration: selectedCourt.maxBookingDuration || 240,
+        openingTime: settingsForm.openingTime,
+        closingTime: settingsForm.closingTime,
+        slotDurationMinutes: settingsForm.slotDurationMinutes,
+        isActiveOnWeekends: settingsForm.isActiveOnWeekends,
+        isActiveOnHolidays: settingsForm.isActiveOnHolidays,
+        hasBreakTime: settingsForm.hasBreakTime,
+        breakStartTime: settingsForm.breakStartTime,
+        breakEndTime: settingsForm.breakEndTime,
+        venueId: selectedCourt.venueId
+      };
+
+      console.log('Updating court with data:', courtUpdateData);
+      await api.updateCourt(selectedCourt.courtId, courtUpdateData);
       setShowSettingsModal(false);
       alert('Court settings updated successfully');
       
