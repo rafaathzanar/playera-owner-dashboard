@@ -303,6 +303,17 @@ class ApiService {
     );
   }
 
+  async generateTimeSlots(courtId, startDate, endDate) {
+    const params = new URLSearchParams({
+      startDate: startDate,
+      endDate: endDate,
+    });
+    return await this.request(
+      `/timeslots/court/${courtId}/generate-slots?${params}`,
+      "POST"
+    );
+  }
+
   // Logout
   async logout() {
     this.removeAuthToken();
