@@ -172,6 +172,26 @@ export default function EditCourt() {
     setLoading(true);
 
     try {
+      // First, we need to get the venue ID for the current user
+      let venueId = null;
+      try {
+        const venues = await api.getVenues();
+        if (venues && venues.length > 0) {
+          venueId = venues[0].venueId; // Get the first venue (each owner has only one)
+        }
+      } catch (error) {
+        console.error("Error fetching venue:", error);
+        alert("Failed to fetch venue information. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      if (!venueId) {
+        alert("No venue found for the current user. Please create a venue first.");
+        setLoading(false);
+        return;
+      }
+
       // Prepare court data for backend
       const courtData = {
         courtName: basicInfo.courtName,
@@ -179,6 +199,7 @@ export default function EditCourt() {
         capacity: basicInfo.capacity,
         pricePerHour: pricing.pricePerHour,
         description: basicInfo.description,
+        venueId: venueId, // This is the required field that was missing!
         // Additional fields that can be added later
         isIndoor: basicInfo.isIndoor,
         isLighted: basicInfo.isLighted,
