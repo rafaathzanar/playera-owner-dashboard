@@ -240,6 +240,13 @@ export default function Venues() {
               Add Court
             </Link>
             <Link
+              to={`/venues/${venues[0].venueId}/timeslots`}
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              <ClockIcon className="h-5 w-5 mr-2" />
+              Time Slots
+            </Link>
+            <Link
               to={`/edit-venue/${venues[0].venueId}`}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >

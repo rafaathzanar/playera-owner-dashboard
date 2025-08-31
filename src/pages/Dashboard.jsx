@@ -290,11 +290,18 @@ export default function Dashboard() {
                   color="bg-green-500"
                 />
                 <QuickActionCard
+                  title="Manage Time Slots"
+                  description="Configure court availability, maintenance schedules, and operating hours"
+                  icon={ClockIcon}
+                  href={`/venues/${venue.venueId}/timeslots`}
+                  color="bg-purple-500"
+                />
+                <QuickActionCard
                   title="View Analytics"
                   description="Analyze revenue, occupancy, and performance metrics"
                   icon={ChartBarIcon}
                   href="/analytics"
-                  color="bg-purple-500"
+                  color="bg-indigo-500"
                 />
                 <QuickActionCard
                   title="Settings"

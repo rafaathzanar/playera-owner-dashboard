@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import api from "../services/api";
 import { 
   HomeIcon, 
   BuildingOfficeIcon, 
@@ -8,19 +9,37 @@ import {
   ChartBarIcon,
   CogIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ClockIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function NavBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [venue, setVenue] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  // Fetch venue data for navigation
+  useEffect(() => {
+    const fetchVenue = async () => {
+      if (user?.userId) {
+        try {
+          const venueData = await api.getVenueByOwner(user.userId);
+          setVenue(venueData);
+        } catch (error) {
+          console.log('No venue found yet');
+        }
+      }
+    };
+    fetchVenue();
+  }, [user?.userId]);
+
   const navigation = [
     { name: "Dashboard", href: "/", icon: HomeIcon },
     { name: "Venues", href: "/venues", icon: BuildingOfficeIcon },
+    { name: "Time Slots", href: venue ? `/venues/${venue.venueId}/timeslots` : "/venues", icon: ClockIcon },
     { name: "Bookings", href: "/bookings", icon: CalendarIcon },
     { name: "Analytics", href: "/analytics", icon: ChartBarIcon },
     { name: "Settings", href: "/settings", icon: CogIcon },

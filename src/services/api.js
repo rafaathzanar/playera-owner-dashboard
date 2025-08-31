@@ -227,6 +227,90 @@ class ApiService {
     });
   }
 
+  // Time Slot Management APIs
+  async getTimeSlotsForDate(courtId, date) {
+    return await this.request(`/timeslots/court/${courtId}/date/${date}`);
+  }
+
+  async getAllTimeSlotsForDate(courtId, date) {
+    return await this.request(`/timeslots/court/${courtId}/date/${date}/all`);
+  }
+
+  async getTimeSlotsForDateRange(courtId, startDate, endDate) {
+    return await this.request(
+      `/timeslots/court/${courtId}/range?startDate=${startDate}&endDate=${endDate}`
+    );
+  }
+
+  async blockTimeSlot(
+    courtId,
+    date,
+    startTime,
+    endTime,
+    reason,
+    isMaintenance = false
+  ) {
+    const params = new URLSearchParams({
+      date: date,
+      startTime: startTime,
+      endTime: endTime,
+      reason: reason,
+      isMaintenance: isMaintenance,
+    });
+    return await this.request(
+      `/timeslots/court/${courtId}/block?${params}`,
+      "POST"
+    );
+  }
+
+  async blockRecurringTimeSlots(
+    courtId,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    reason,
+    isMaintenance,
+    recurringDays
+  ) {
+    const params = new URLSearchParams({
+      startDate: startDate,
+      endDate: endDate,
+      startTime: startTime,
+      endTime: endTime,
+      reason: reason,
+      isMaintenance: isMaintenance,
+    });
+
+    // Add recurring days as separate parameters
+    recurringDays.forEach((day) => params.append("recurringDays", day));
+
+    return await this.request(
+      `/timeslots/court/${courtId}/block-recurring?${params}`,
+      "POST"
+    );
+  }
+
+  async unblockTimeSlot(courtId, date, startTime, endTime) {
+    const params = new URLSearchParams({
+      date: date,
+      startTime: startTime,
+      endTime: endTime,
+    });
+    return await this.request(
+      `/timeslots/court/${courtId}/unblock?${params}`,
+      "DELETE"
+    );
+  }
+
+  async updateCourtTimeSettings(courtId, settings) {
+    return await this.request(
+      `/courts/${courtId}/time-settings`,
+      "PUT",
+      settings
+    );
+  }
+
   // Logout
   async logout() {
     this.removeAuthToken();
