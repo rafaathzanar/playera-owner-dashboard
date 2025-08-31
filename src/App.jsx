@@ -17,7 +17,7 @@ import TimeSlotManagement from "./pages/TimeSlotManagement";
 import DynamicPricing from "./pages/DynamicPricing";
 import BookingManagement from "./pages/BookingManagement";
 import Analytics from "./pages/Analytics";
-import Settings from "./pages/Settings";
+
 
 export default function App() {
   return (
@@ -129,14 +129,7 @@ export default function App() {
               </>
             </ProtectedRoute>
           } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <>
-                <Navbar />
-                <Settings />
-              </>
-            </ProtectedRoute>
-          } />
+
         </Routes>
       </Router>
     </AuthProvider>

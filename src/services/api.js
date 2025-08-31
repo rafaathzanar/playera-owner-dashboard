@@ -232,6 +232,14 @@ class ApiService {
     return await this.request(`/timeslots/court/${courtId}/date/${date}`);
   }
 
+  async updateDynamicPricing(courtId, pricingSettings) {
+    return await this.request(
+      `/dynamic-pricing/court/${courtId}/settings`,
+      "PUT",
+      pricingSettings
+    );
+  }
+
   async getAllTimeSlotsForDate(courtId, date) {
     return await this.request(`/timeslots/court/${courtId}/date/${date}/all`);
   }

@@ -307,7 +307,7 @@ export default function Dashboard() {
                   title="Settings"
                   description="Configure business rules, notifications, and preferences"
                   icon={StarIcon}
-                  href="/settings"
+                  href="/venues"
                   color="bg-orange-500"
                 />
               </>

@@ -7,7 +7,6 @@ import {
   CalendarIcon, 
   CurrencyDollarIcon,
   ChartBarIcon,
-  CogIcon,
   Bars3Icon,
   XMarkIcon,
   ClockIcon
@@ -40,9 +39,9 @@ export default function NavBar() {
     { name: "Dashboard", href: "/", icon: HomeIcon },
     { name: "Venues", href: "/venues", icon: BuildingOfficeIcon },
     { name: "Time Slots", href: venue ? `/venues/${venue.venueId}/timeslots` : "/venues", icon: ClockIcon },
+    { name: "Dynamic Pricing", href: venue ? `/venues/${venue.venueId}/pricing` : "/venues", icon: CurrencyDollarIcon },
     { name: "Bookings", href: "/bookings", icon: CalendarIcon },
     { name: "Analytics", href: "/analytics", icon: ChartBarIcon },
-    { name: "Settings", href: "/settings", icon: CogIcon },
   ];
 
   const isActive = (path) => location.pathname === path;
