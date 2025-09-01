@@ -69,42 +69,43 @@ export default function Dashboard() {
         return;
       }
 
-      // TODO: Replace with real API calls to get venue-specific analytics
-      setStats({
-        totalCourts: venue?.courts?.length || 0,
-        totalBookings: 156,
-        totalRevenue: 125000,
-        pendingBookings: 12,
-        activeBookings: 8
-      });
+      // Only fetch dashboard data if venue exists
+      if (venue) {
+        // TODO: Replace with real API calls to get venue-specific analytics
+        setStats({
+          totalCourts: venue?.courts?.length || 0,
+          totalBookings: 0, // Will be fetched from real API
+          totalRevenue: 0,   // Will be fetched from real API
+          pendingBookings: 0, // Will be fetched from real API
+          activeBookings: 0   // Will be fetched from real API
+        });
 
-      setRecentBookings([
-        {
-          id: 1,
-          customerName: "John Doe",
-          venueName: "Colombo Indoor Sports Complex",
-          courtName: "Basketball Court 1",
-          date: "2024-01-15",
-          time: "18:00 - 20:00",
-          status: "CONFIRMED",
-          amount: 2400
-        },
-        {
-          id: 2,
-          customerName: "Jane Smith",
-          venueName: "Colombo Indoor Sports Complex",
-          courtName: "Futsal Court 1",
-          date: "2024-01-15",
-          time: "19:00 - 21:00",
-          status: "PENDING",
-          amount: 2000
-        }
-      ]);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    } finally {
-      setLoading(false);
-    }
+        // TODO: Replace with real API call for recent bookings
+        setRecentBookings([]);
+      } else {
+        // For new venue owners, show setup-focused stats
+        setStats({
+          totalCourts: 0,
+          totalBookings: 0,
+          totalRevenue: 0,
+          pendingBookings: 0,
+          activeBookings: 0
+        });
+        setRecentBookings([]);
+      }
+          } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setStats({
+          totalCourts: 0,
+          totalBookings: 0,
+          totalRevenue: 0,
+          pendingBookings: 0,
+          activeBookings: 0
+        });
+        setRecentBookings([]);
+      } finally {
+        setLoading(false);
+      }
   };
 
   const StatCard = ({ title, value, icon: Icon, color, change }) => (
@@ -174,28 +175,49 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg shadow p-8 border border-orange-200 mb-8">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-8">
             <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-orange-100 mb-4">
-                <BuildingOfficeIcon className="h-8 w-8 text-orange-600" />
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+                <BuildingOfficeIcon className="h-8 w-8 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold text-orange-900 mb-2">Welcome to Playera!</h2>
-              <p className="text-orange-700 mb-6 max-w-2xl mx-auto">
-                You're all set up as a venue owner! Now it's time to create your sports venue and start managing courts, equipment, and bookings.
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Welcome to Your Venue Dashboard!</h3>
+              <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+                You're just a few steps away from managing your sports venue. Create your venue to start accepting bookings, 
+                managing courts, and tracking your business performance. The setup process is quick and easy!
               </p>
+              
+              {/* Setup Steps */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 max-w-4xl mx-auto">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">1</div>
+                  <h4 className="font-medium text-gray-900 mb-1">Create Venue</h4>
+                  <p className="text-sm text-gray-600">Set up your venue details and location</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">2</div>
+                  <h4 className="font-medium text-gray-900 mb-1">Add Courts</h4>
+                  <p className="text-sm text-gray-600">Create different types of sports courts</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">3</div>
+                  <h4 className="font-medium text-gray-900 mb-1">Start Accepting</h4>
+                  <p className="text-sm text-gray-600">Begin taking bookings from customers</p>
+                </div>
+              </div>
+              
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/add-venue"
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   Create Your First Venue
                 </Link>
                 <Link
                   to="/venues"
-                  className="inline-flex items-center px-6 py-3 border border-orange-300 text-base font-medium rounded-md text-orange-700 bg-white hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
+                  className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                 >
-                  Learn More
+                  View Documentation
                 </Link>
               </div>
             </div>
@@ -433,18 +455,37 @@ export default function Dashboard() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
                 <ChartBarIcon className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Get Started?</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Welcome to Your Venue Dashboard!</h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                Once you create your venue, you'll be able to track bookings, manage courts, and analyze your business performance. 
-                The setup process takes just a few minutes and includes everything you need to start accepting bookings.
+                You're just a few steps away from managing your sports venue. Create your venue to start accepting bookings, 
+                managing courts, and tracking your business performance. The setup process is quick and easy!
               </p>
+              
+              {/* Setup Steps */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 max-w-4xl mx-auto">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">1</div>
+                  <h4 className="font-medium text-gray-900 mb-1">Create Venue</h4>
+                  <p className="text-sm text-gray-600">Set up your venue details and location</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">2</div>
+                  <h4 className="font-medium text-gray-900 mb-1">Add Courts</h4>
+                  <p className="text-sm text-gray-600">Create different types of sports courts</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">3</div>
+                  <h4 className="font-medium text-gray-900 mb-1">Start Accepting</h4>
+                  <p className="text-sm text-gray-600">Begin taking bookings from customers</p>
+                </div>
+              </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/add-venue"
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
-                  Create Your Venue
+                  Create Your First Venue
                 </Link>
                 <Link
                   to="/venues"

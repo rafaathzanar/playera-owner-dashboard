@@ -16,6 +16,7 @@ import {
   PlusIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
+import api from '../services/api';
 
 const VenueDetails = () => {
   const { id } = useParams();
@@ -24,51 +25,48 @@ const VenueDetails = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Mock data - replace with actual API call
+  // Fetch real venue data
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setVenue({
-        venueId: id,
-        name: 'Colombo Indoor Sports Complex',
-        description: 'A premier indoor sports facility with world-class amenities including basketball, futsal, and badminton courts.',
-        address: '70 Galle Road, Dehiwala, Colombo',
-        location: 'Dehiwala, Colombo',
-        contactNo: '+94 77 969 4278',
-        email: 'info@colomboindoor.com',
-        website: 'www.colomboindoor.com',
-        status: 'ACTIVE',
-        venueType: 'INDOOR',
-        maxCapacity: 100,
-        basePrice: 800.00,
-        parkingAvailable: true,
-        foodAvailable: true,
-        changingRoomsAvailable: true,
-        showerAvailable: true,
-        wifiAvailable: true,
-        dynamicPricingEnabled: true,
-        peakHourMultiplier: 1.5,
-        offPeakMultiplier: 0.8,
-        weekendMultiplier: 1.2,
-        holidayMultiplier: 1.3,
-        commissionRate: 0.10,
-        autoApprovalEnabled: false,
-        minAdvanceBookingHours: 24,
-        maxAdvanceBookingDays: 30,
-        openingHours: '6:00 AM - 11:00 PM',
-        courts: [
-          { courtId: 1, name: 'Basketball Court 1', type: 'BASKETBALL', status: 'ACTIVE', pricePerHour: 1200.00 },
-          { courtId: 2, name: 'Futsal Court 1', type: 'FOOTBALL', status: 'ACTIVE', pricePerHour: 1000.00 },
-          { courtId: 3, name: 'Badminton Court 1', type: 'BADMINTON', status: 'ACTIVE', pricePerHour: 800.00 }
-        ],
-        equipment: [
-          { equipmentId: 1, name: 'Basketball', availableQuantity: 10, ratePerHour: 100.00 },
-          { equipmentId: 2, name: 'Football', availableQuantity: 15, ratePerHour: 80.00 },
-          { equipmentId: 3, name: 'Badminton Rackets', availableQuantity: 20, ratePerHour: 50.00 }
-        ]
-      });
-      setLoading(false);
-    }, 1000);
+    const fetchVenueData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch venue details
+        const venueData = await api.getVenueById(id);
+        console.log('Venue data received:', venueData);
+        
+        if (venueData && venueData.venueId) {
+          // Fetch courts for this venue
+          const courtsData = await api.getCourtsByVenue(venueData.venueId);
+          console.log('Courts data received:', courtsData);
+          
+          // Fetch equipment for this venue
+          const equipmentData = await api.getEquipment(venueData.venueId);
+          console.log('Equipment data received:', equipmentData);
+          
+          // Combine all data
+          const fullVenueData = {
+            ...venueData,
+            courts: courtsData && Array.isArray(courtsData) ? courtsData : [],
+            equipment: equipmentData && Array.isArray(equipmentData) ? equipmentData : []
+          };
+          
+          setVenue(fullVenueData);
+        } else {
+          console.error('Invalid venue data received:', venueData);
+          setVenue(null);
+        }
+      } catch (error) {
+        console.error('Error fetching venue data:', error);
+        setVenue(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchVenueData();
+    }
   }, [id]);
 
   if (loading) {

@@ -57,6 +57,13 @@ export default function AddVenue() {
     setLoading(true);
 
     try {
+      // Validate required fields
+      if (!basicInfo.maxCapacity || basicInfo.maxCapacity.trim() === '') {
+        alert('Maximum Capacity is required. Please enter a value.');
+        setLoading(false);
+        return;
+      }
+
       // Prepare venue data for backend
       const venueData = {
         name: basicInfo.name,
@@ -69,7 +76,7 @@ export default function AddVenue() {
         latitude: basicInfo.latitude || null,
         longitude: basicInfo.longitude || null,
         venueType: basicInfo.venueType,
-        maxCapacity: basicInfo.maxCapacity ? parseInt(basicInfo.maxCapacity) : null,
+        maxCapacity: parseInt(basicInfo.maxCapacity),
         status: basicInfo.status,
 
         openingHours: businessHours.openingHours,
@@ -166,10 +173,11 @@ export default function AddVenue() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Capacity
+                  Max Capacity *
                 </label>
                 <input
                   type="number"
+                  required
                   value={basicInfo.maxCapacity}
                   onChange={(e) => handleBasicInfoChange('maxCapacity', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"

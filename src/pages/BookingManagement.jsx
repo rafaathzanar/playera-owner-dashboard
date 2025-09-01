@@ -10,7 +10,8 @@ import {
   ExclamationTriangleIcon,
   EyeIcon,
   PhoneIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  PlusIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
@@ -402,22 +403,33 @@ export default function BookingManagement() {
     );
   }
 
-  // Show error state if no venue found
+  // Show onboarding state if no venue found
   if (!venue) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <span className="text-white text-2xl font-bold">!</span>
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+            <PlusIcon className="h-8 w-8 text-blue-600" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Venue Found</h3>
-          <p className="text-gray-600 mb-4">Unable to load venue information. Please check your authentication.</p>
-          <button 
-            onClick={() => fetchVenueAndBookings()} 
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-          >
-            Retry
-          </button>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Your First Venue</h3>
+          <p className="text-gray-600 mb-6">
+            Before you can manage bookings, you need to create a venue first. This will be your sports facility where customers can book courts and equipment.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/add-venue')}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Create Venue
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -8,12 +8,16 @@ import {
   UserIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  PlusIcon
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
 
 export default function Analytics() {
   const { venueId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [venue, setVenue] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -27,80 +31,45 @@ export default function Analytics() {
   const fetchVenueAndAnalytics = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with real API calls
-      // const venueData = await api.getVenueById(venueId);
-      // const analyticsData = await api.getAnalytics(venueId, dateRange);
       
-      // Mock data for now
-      setVenue({
-        name: 'Colombo Indoor Sports Complex',
-        venueId: venueId
-      });
+      if (!user?.userId) {
+        console.error('User not authenticated');
+        setVenue(null);
+        setAnalyticsData(null);
+        return;
+      }
+
+      // Fetch venue data first
+      const venueData = await api.getVenueByOwner(user.userId);
+      console.log('Venue data received:', venueData);
       
-      setAnalyticsData({
-        revenue: {
-          total: 125000,
-          change: 15.5,
-          trend: 'up',
-          breakdown: {
-            courtBookings: 98000,
-            equipmentRentals: 27000
-          }
-        },
-        occupancy: {
-          average: 78.5,
-          change: 8.2,
-          trend: 'up',
-          byCourt: [
-            { name: 'Basketball Court 1', occupancy: 85.2 },
-            { name: 'Futsal Court 1', occupancy: 72.8 },
-            { name: 'Badminton Court 1', occupancy: 77.5 }
-          ]
-        },
-        bookings: {
-          total: 156,
-          change: 12.3,
-          trend: 'up',
-          byStatus: {
-            confirmed: 142,
-            pending: 8,
-            cancelled: 6
-          }
-        },
-        customers: {
-          total: 89,
-          new: 23,
-          returning: 66,
-          change: 5.8,
-          trend: 'up'
-        },
-        timeSlots: {
-          peakHours: ['18:00', '19:00', '20:00'],
-          offPeakHours: ['06:00', '07:00', '08:00'],
-          weekendPeak: ['14:00', '15:00', '16:00']
-        },
-        popularCourts: [
-          { name: 'Basketball Court 1', bookings: 45, revenue: 54000 },
-          { name: 'Futsal Court 1', bookings: 38, revenue: 38000 },
-          { name: 'Badminton Court 1', bookings: 32, revenue: 25600 }
-        ],
-        equipmentUsage: [
-          { name: 'Basketball', rentals: 156, revenue: 15600 },
-          { name: 'Futsal Ball', rentals: 134, revenue: 10720 },
-          { name: 'Badminton Racket', rentals: 89, revenue: 13350 }
-        ],
-        monthlyTrends: [
-          { month: 'Jan', revenue: 85000, bookings: 120, occupancy: 65 },
-          { month: 'Feb', revenue: 92000, bookings: 135, occupancy: 72 },
-          { month: 'Mar', revenue: 88000, bookings: 128, occupancy: 68 },
-          { month: 'Apr', revenue: 95000, bookings: 142, occupancy: 75 },
-          { month: 'May', revenue: 102000, bookings: 148, occupancy: 78 },
-          { month: 'Jun', revenue: 125000, bookings: 156, occupancy: 78.5 }
-        ]
-      });
-    } catch (error) {
-      console.error('Error fetching venue and analytics:', error);
-    } finally {
+      if (venueData && venueData.venueId) {
+        setVenue(venueData);
+        
+        // TODO: Replace with real API call when backend is ready
+        // const analyticsData = await api.getAnalytics(venueData.venueId, dateRange);
+        
+        // For now, show empty analytics data
+        setAnalyticsData({
+          revenue: { total: 0, change: 0, trend: 'neutral', breakdown: { courtBookings: 0, equipmentRentals: 0 } },
+          occupancy: { average: 0, change: 0, trend: 'neutral', byCourt: [] },
+          bookings: { total: 0, change: 0, trend: 'neutral', byStatus: { confirmed: 0, pending: 0, cancelled: 0 } },
+          customers: { total: 0, new: 0, returning: 0, change: 0, trend: 'neutral' },
+          timeSlots: { peakHours: [], offPeakHours: [], weekendPeak: [] },
+          popularCourts: [],
+          equipmentUsage: [],
+          monthlyTrends: []
+        });
+      } else {
+        console.log('No venue data or invalid venue ID:', venueData);
+        setVenue(null);
+        setAnalyticsData(null);
+      }
+          } catch (error) {
+        console.error('Error fetching venue and analytics:', error);
+        setVenue(null);
+        setAnalyticsData(null);
+      } finally {
       setLoading(false);
     }
   };
@@ -277,6 +246,38 @@ export default function Analytics() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  // Show onboarding state if no venue found
+  if (!venue) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+            <PlusIcon className="h-8 w-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Your First Venue</h3>
+          <p className="text-gray-600 mb-6">
+            Before you can view analytics, you need to create a venue first. This will be your sports facility where customers can book courts and equipment.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/add-venue')}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Create Venue
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

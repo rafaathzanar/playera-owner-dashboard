@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   CurrencyDollarIcon,
   ClockIcon,
-  CogIcon
+  CogIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function DynamicPricing() {
   const { venueId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [venue, setVenue] = useState(null);
   const [courts, setCourts] = useState([]);
   const [selectedCourt, setSelectedCourt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,14 +43,44 @@ export default function DynamicPricing() {
   const fetchCourts = async () => {
     try {
       setLoading(true);
-      const courtsData = await api.getCourtsByVenue(venueId);
-      setCourts(courtsData);
-      if (courtsData.length > 0) {
-        setSelectedCourt(courtsData[0]);
+      setError(null);
+      
+      if (!user?.userId) {
+        console.error('User not authenticated');
+        setVenue(null);
+        setCourts([]);
+        return;
+      }
+
+      // Fetch venue data first
+      const venueData = await api.getVenueByOwner(user.userId);
+      console.log('Venue data received:', venueData);
+      
+      if (venueData && venueData.venueId) {
+        setVenue(venueData);
+        
+        // Fetch courts for this venue
+        const courtsData = await api.getCourtsByVenue(venueData.venueId);
+        console.log('Courts data received:', courtsData);
+        
+        if (courtsData && Array.isArray(courtsData)) {
+          setCourts(courtsData);
+          if (courtsData.length > 0) {
+            setSelectedCourt(courtsData[0]);
+          }
+        } else {
+          setCourts([]);
+        }
+      } else {
+        console.log('No venue data or invalid venue ID:', venueData);
+        setVenue(null);
+        setCourts([]);
       }
     } catch (err) {
       setError('Failed to fetch courts');
       console.error('Error fetching courts:', err);
+      setVenue(null);
+      setCourts([]);
     } finally {
       setLoading(false);
     }
@@ -170,8 +205,72 @@ export default function DynamicPricing() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Loading dynamic pricing...</p>
-              </div>
-            </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show onboarding state if no venue found
+  if (!venue) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+            <PlusIcon className="h-8 w-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Your First Venue</h3>
+          <p className="text-gray-600 mb-6">
+            Before you can manage dynamic pricing, you need to create a venue first. This will be your sports facility where customers can book courts and equipment.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/add-venue')}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Create Venue
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show onboarding state if no courts found
+  if (courts.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+            <PlusIcon className="h-8 w-8 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Your First Court</h3>
+          <p className="text-gray-600 mb-6">
+            Before you can manage dynamic pricing, you need to add courts to your venue. Dynamic pricing rules are applied to individual courts.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/courts')}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Court
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -191,15 +290,7 @@ export default function DynamicPricing() {
     );
   }
 
-  if (courts.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg text-gray-600">No courts found. Please create courts first.</p>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-gray-50">

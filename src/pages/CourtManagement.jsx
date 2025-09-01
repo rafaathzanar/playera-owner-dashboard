@@ -9,10 +9,13 @@ import {
   CogIcon,
   ExclamationTriangleIcon
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
 
 export default function CourtManagement() {
   const { venueId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [courts, setCourts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -62,57 +65,43 @@ export default function CourtManagement() {
   const fetchVenueAndCourts = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with real API calls
-      // const venueData = await api.getVenueById(venueId);
-      // const courtsData = await api.getCourtsByVenue(venueId);
+      if (!user?.userId) {
+        console.error('User not authenticated');
+        setVenue(null);
+        setCourts([]);
+        return;
+      }
+
+      // Fetch venue data first
+      const venueData = await api.getVenueByOwner(user.userId);
+      console.log('Venue data received:', venueData);
       
-      // Mock data for now
-      setVenue({
-        name: 'Colombo Indoor Sports Complex',
-        venueId: venueId
-      });
-      
-      setCourts([
-        {
-          courtId: 1,
-          courtName: 'Basketball Court 1',
-          type: 'BASKETBALL',
-          capacity: 20,
-          pricePerHour: 1200,
-          status: 'ACTIVE',
-          isIndoor: true,
-          isLighted: true,
-          isAirConditioned: true,
-          openingTime: '06:00',
-          closingTime: '23:00',
-          slotDurationMinutes: 30,
-          dynamicPricingEnabled: true,
-          peakHourMultiplier: 1.5,
-          offPeakMultiplier: 0.8,
-          weekendMultiplier: 1.2
-        },
-        {
-          courtId: 2,
-          courtName: 'Futsal Court 1',
-          type: 'FUTSAL',
-          capacity: 14,
-          pricePerHour: 1000,
-          status: 'ACTIVE',
-          isIndoor: true,
-          isLighted: true,
-          isAirConditioned: true,
-          openingTime: '06:00',
-          closingTime: '23:00',
-          slotDurationMinutes: 30,
-          dynamicPricingEnabled: true,
-          peakHourMultiplier: 1.5,
-          offPeakMultiplier: 0.8,
-          weekendMultiplier: 1.2
+      if (venueData && venueData.venueId) {
+        setVenue({
+          name: venueData.name || 'Sports Venue',
+          venueId: venueData.venueId
+        });
+
+        // Fetch real courts from backend
+        const courtsData = await api.getCourtsByVenue(venueData.venueId);
+        console.log('Courts data received:', courtsData);
+        
+        if (courtsData && Array.isArray(courtsData)) {
+          setCourts(courtsData);
+        } else {
+          console.log('No courts data or invalid format:', courtsData);
+          setCourts([]);
         }
-      ]);
-    } catch (error) {
-      console.error('Error fetching venue and courts:', error);
-    } finally {
+      } else {
+        console.log('No venue data or invalid venue ID:', venueData);
+        setVenue(null);
+        setCourts([]);
+      }
+          } catch (error) {
+        console.error('Error fetching venue and courts:', error);
+        setVenue(null);
+        setCourts([]);
+      } finally {
       setLoading(false);
     }
   };
@@ -124,9 +113,10 @@ export default function CourtManagement() {
   const handleAddCourt = async (e) => {
     e.preventDefault();
     try {
-      // TODO: Replace with real API call
-      // const newCourt = await api.createCourt(venueId, courtForm);
+      // TODO: Replace with real API call when backend is ready
+      // const newCourt = await api.createCourt(venue.venueId, courtForm);
       
+      // For now, simulate adding a court
       const newCourt = {
         courtId: Date.now(),
         ...courtForm
@@ -143,9 +133,10 @@ export default function CourtManagement() {
   const handleEditCourt = async (e) => {
     e.preventDefault();
     try {
-      // TODO: Replace with real API call
+      // TODO: Replace with real API call when backend is ready
       // await api.updateCourt(editingCourt.courtId, courtForm);
       
+      // For now, simulate updating a court
       setCourts(prev => prev.map(court => 
         court.courtId === editingCourt.courtId 
           ? { ...court, ...courtForm }
@@ -163,9 +154,10 @@ export default function CourtManagement() {
   const handleDeleteCourt = async (courtId) => {
     if (window.confirm('Are you sure you want to delete this court?')) {
       try {
-        // TODO: Replace with real API call
+        // TODO: Replace with real API call when backend is ready
         // await api.deleteCourt(courtId);
         
+        // For now, simulate deleting a court
         setCourts(prev => prev.filter(court => court.courtId !== courtId));
       } catch (error) {
         console.error('Error deleting court:', error);
@@ -623,6 +615,38 @@ export default function CourtManagement() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  // Show onboarding state if no venue found
+  if (!venue) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+            <PlusIcon className="h-8 w-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Your First Venue</h3>
+          <p className="text-gray-600 mb-6">
+            Before you can manage courts, you need to create a venue first. This will be your sports facility where customers can book courts and equipment.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/add-venue')}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Create Venue
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

@@ -8,6 +8,7 @@ import {
   ExclamationTriangleIcon,
   WrenchScrewdriverIcon
 } from "@heroicons/react/24/outline";
+import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 
 // EquipmentModal component defined outside to prevent recreation
@@ -172,6 +173,7 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
 export default function EquipmentManagement() {
   const { venueId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [equipment, setEquipment] = useState([]);
   const [courts, setCourts] = useState([]);
@@ -207,20 +209,42 @@ export default function EquipmentManagement() {
       setLoading(true);
       setError(null);
       
-      // Fetch venue, courts, and equipment data
-      const [venueData, courtsData, equipmentData] = await Promise.all([
-        api.getVenueById(venueId),
-        api.getCourtsByVenue(venueId),
-        api.getEquipment(venueId)
-      ]);
+      if (!user?.userId) {
+        console.error('User not authenticated');
+        setVenue(null);
+        setCourts([]);
+        setEquipment([]);
+        return;
+      }
+
+      // Fetch venue data first
+      const venueData = await api.getVenueByOwner(user.userId);
+      console.log('Venue data received:', venueData);
       
-      setVenue(venueData);
-      setCourts(courtsData);
-      setEquipment(equipmentData || []);
+      if (venueData && venueData.venueId) {
+        setVenue(venueData);
+        
+        // Fetch courts and equipment for this venue
+        const [courtsData, equipmentData] = await Promise.all([
+          api.getCourtsByVenue(venueData.venueId),
+          api.getEquipment(venueData.venueId)
+        ]);
+        
+        setCourts(courtsData || []);
+        setEquipment(equipmentData || []);
+      } else {
+        console.log('No venue data or invalid venue ID:', venueData);
+        setVenue(null);
+        setCourts([]);
+        setEquipment([]);
+      }
       
     } catch (error) {
       console.error('Error fetching venue and data:', error);
       setError('Failed to load venue data. Please try again.');
+      setVenue(null);
+      setCourts([]);
+      setEquipment([]);
     } finally {
       setLoading(false);
     }
@@ -370,6 +394,70 @@ export default function EquipmentManagement() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  // Show onboarding state if no venue found
+  if (!venue) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+            <PlusIcon className="h-8 w-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Your First Venue</h3>
+          <p className="text-gray-600 mb-6">
+            Before you can manage equipment, you need to create a venue first. This will be your sports facility where customers can rent equipment.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/add-venue')}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Create Venue
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show onboarding state if no courts found
+  if (courts.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+            <PlusIcon className="h-8 w-8 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Your First Court</h3>
+          <p className="text-gray-600 mb-6">
+            Before you can manage equipment, you need to add courts to your venue. Equipment is associated with specific courts where customers can use it.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/courts')}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Court
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

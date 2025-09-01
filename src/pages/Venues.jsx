@@ -61,8 +61,8 @@ export default function Venues() {
             address: venueData.address,
             venueType: venueData.venueType || 'INDOOR',
             status: venueData.status || 'ACTIVE',
-            maxCapacity: venueData.maxCapacity || 100,
-            basePrice: venueData.basePrice || 0.0,
+            maxCapacity: venueData.maxCapacity,
+            basePrice: venueData.basePrice,
             totalCourts: venueData.courts?.length || 0,
             totalRevenue: 0, // Will be calculated from analytics
             lastBooking: null, // Will be fetched separately if needed
