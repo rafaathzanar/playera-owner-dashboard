@@ -14,7 +14,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
-import websocketService from "../services/websocket";
 
 export default function BookingManagement() {
   const { venueId } = useParams();
@@ -42,25 +41,6 @@ export default function BookingManagement() {
     fetchVenueAndBookings();
   }, [venueId]);
 
-  // WebSocket connection for real-time updates
-  useEffect(() => {
-    if (venue?.venueId) {
-      // Connect to WebSocket for real-time updates
-      websocketService.connect(venue.venueId, handleWebSocketMessage)
-        .then(() => {
-          console.log('WebSocket connected for venue:', venue.venueId);
-        })
-        .catch(error => {
-          console.error('Failed to connect WebSocket:', error);
-        });
-
-      // Cleanup on unmount
-      return () => {
-        websocketService.disconnect();
-      };
-    }
-  }, [venue?.venueId]);
-
   useEffect(() => {
     filterBookings();
   }, [bookings, statusFilter, courtFilter, searchTerm, dateFilter, dateRange]);
@@ -68,14 +48,17 @@ export default function BookingManagement() {
   const fetchVenueAndBookings = async () => {
     try {
       setLoading(true);
-      
       if (!user?.userId) {
         console.error('User not authenticated');
+        setVenue(null);
+        setBookings([]);
         return;
       }
 
       // Fetch venue data first
       const venueData = await api.getVenueByOwner(user.userId);
+      console.log('Venue data received:', venueData);
+      
       if (venueData && venueData.venueId) {
         setVenue({
           name: venueData.name || 'Sports Venue',
@@ -84,6 +67,8 @@ export default function BookingManagement() {
 
         // Fetch real bookings from backend
         const bookingsData = await api.getBookings(venueData.venueId);
+        console.log('Bookings data received:', bookingsData);
+        
         if (bookingsData && Array.isArray(bookingsData)) {
           // Transform backend data to match frontend structure
           const transformedBookings = bookingsData.map(booking => ({
@@ -114,16 +99,19 @@ export default function BookingManagement() {
           
           setBookings(transformedBookings);
         } else {
+          console.log('No bookings data or invalid format:', bookingsData);
           setBookings([]);
         }
       } else {
+        console.log('No venue data or invalid venue ID:', venueData);
         setVenue(null);
         setBookings([]);
       }
-    } catch (error) {
-      console.error('Error fetching venue and bookings:', error);
-      setBookings([]);
-    } finally {
+          } catch (error) {
+        console.error('Error fetching venue and bookings:', error);
+        setVenue(null);
+        setBookings([]);
+      } finally {
       setLoading(false);
     }
   };
@@ -179,8 +167,8 @@ export default function BookingManagement() {
 
   const handleStatusChange = async (bookingId, newStatus) => {
     try {
-      // Call real API to update booking status
-      await api.updateBookingStatus(bookingId, newStatus);
+      // TODO: Replace with real API call
+      // await api.updateBookingStatus(bookingId, newStatus);
       
       // Update local state
       setBookings(prev => prev.map(booking => 
@@ -190,69 +178,7 @@ export default function BookingManagement() {
       ));
     } catch (error) {
       console.error('Error updating booking status:', error);
-      alert('Failed to update booking status. Please try again.');
     }
-  };
-
-  // Handle WebSocket messages for real-time updates
-  const handleWebSocketMessage = (type, data) => {
-    switch (type) {
-      case 'NEW_BOOKING':
-        // Add new booking to the list
-        const newBooking = transformBackendBooking(data);
-        setBookings(prev => [newBooking, ...prev]);
-        break;
-      
-      case 'STATUS_UPDATE':
-        // Update booking status in real-time
-        setBookings(prev => prev.map(booking => 
-          booking.bookingId === data.bookingId 
-            ? { ...booking, status: data.status }
-            : booking
-        ));
-        break;
-      
-      case 'BOOKING_CANCELLED':
-        // Remove cancelled booking or mark as cancelled
-        setBookings(prev => prev.map(booking => 
-          booking.bookingId === data.bookingId 
-            ? { ...booking, status: 'CANCELLED' }
-            : booking
-        ));
-        break;
-      
-      default:
-        console.log('Unknown WebSocket message type:', type);
-    }
-  };
-
-  // Helper function to transform backend booking data
-  const transformBackendBooking = (backendBooking) => {
-    return {
-      bookingId: backendBooking.bookingId,
-      customerName: backendBooking.customerName || 'Unknown Customer',
-      customerEmail: backendBooking.customerEmail || 'No email',
-      customerPhone: backendBooking.customerPhone || 'No phone',
-      venueName: venue?.name || 'Sports Venue',
-      courtName: backendBooking.courtBookings?.[0]?.courtName || 'Unknown Court',
-      courtType: backendBooking.courtBookings?.[0]?.courtType || 'UNKNOWN',
-      date: backendBooking.bookingDate ? new Date(backendBooking.bookingDate).toISOString().split('T')[0] : 'Unknown Date',
-      startTime: backendBooking.startTime || '00:00',
-      endTime: backendBooking.endTime || '00:00',
-      duration: backendBooking.duration || 0,
-      status: backendBooking.status || 'PENDING',
-      totalCost: backendBooking.totalCost || 0,
-      courtCost: backendBooking.totalCost || 0,
-      equipmentCost: 0,
-      specialRequests: backendBooking.specialRequests || '',
-      bookingDate: backendBooking.createdAt || new Date().toISOString(),
-      paymentStatus: 'PENDING',
-      equipmentBookings: backendBooking.equipmentBookings?.map(eq => ({
-        name: eq.equipmentName || 'Unknown Equipment',
-        quantity: eq.quantity || 0,
-        cost: eq.totalPrice || 0
-      })) || []
-    };
   };
 
   const getStatusColor = (status) => {
@@ -462,15 +388,40 @@ export default function BookingManagement() {
     );
   };
 
+  const stats = calculateStats();
+
+  // Show loading state while fetching data
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading bookings...</p>
+        </div>
       </div>
     );
   }
 
-  const stats = calculateStats();
+  // Show error state if no venue found
+  if (!venue) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-12 w-12 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+            <span className="text-white text-2xl font-bold">!</span>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Venue Found</h3>
+          <p className="text-gray-600 mb-4">Unable to load venue information. Please check your authentication.</p>
+          <button 
+            onClick={() => fetchVenueAndBookings()} 
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
