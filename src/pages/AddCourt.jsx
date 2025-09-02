@@ -121,6 +121,37 @@ export default function AddCourt() {
     setLoading(true);
 
     try {
+      // Validate required fields
+      if (!basicInfo.courtName || basicInfo.courtName.trim() === '') {
+        alert('Court Name is required. Please enter a value.');
+        setLoading(false);
+        return;
+      }
+
+      if (!pricing.pricePerHour || pricing.pricePerHour <= 0) {
+        alert('Price per hour is required and must be greater than 0.');
+        setLoading(false);
+        return;
+      }
+
+      if (!pricing.minBookingDuration || pricing.minBookingDuration <= 0) {
+        alert('Minimum booking duration is required and must be greater than 0.');
+        setLoading(false);
+        return;
+      }
+
+      if (!pricing.maxBookingDuration || pricing.maxBookingDuration <= 0) {
+        alert('Maximum booking duration is required and must be greater than 0.');
+        setLoading(false);
+        return;
+      }
+
+      if (pricing.minBookingDuration > pricing.maxBookingDuration) {
+        alert('Minimum booking duration cannot be greater than maximum booking duration.');
+        setLoading(false);
+        return;
+      }
+
       // Prepare court data for backend
       const courtData = {
         courtName: basicInfo.courtName,
@@ -129,26 +160,31 @@ export default function AddCourt() {
         pricePerHour: pricing.pricePerHour,
         description: basicInfo.description,
         venueId: venueId || user?.venueId,
-        // Additional fields that can be added later
+        // Court features
         isIndoor: basicInfo.isIndoor,
         isLighted: basicInfo.isLighted,
         isAirConditioned: basicInfo.isAirConditioned,
+        // Booking duration constraints
         minBookingDuration: pricing.minBookingDuration,
         maxBookingDuration: pricing.maxBookingDuration,
+        // Operating hours
         openingTime: operatingHours.openingTime,
         closingTime: operatingHours.closingTime,
         slotDurationMinutes: operatingHours.slotDurationMinutes,
         isActiveOnWeekends: operatingHours.isActiveOnWeekends,
         isActiveOnHolidays: operatingHours.isActiveOnHolidays,
+        // Break time
         hasBreakTime: breakTime.hasBreakTime,
         breakStartTime: breakTime.hasBreakTime ? breakTime.breakStartTime : null,
         breakEndTime: breakTime.hasBreakTime ? breakTime.breakEndTime : null,
+        // Dynamic pricing
         dynamicPricingEnabled: dynamicPricing.dynamicPricingEnabled,
         peakHourStart: dynamicPricing.dynamicPricingEnabled ? dynamicPricing.peakHourStart : null,
         peakHourEnd: dynamicPricing.dynamicPricingEnabled ? dynamicPricing.peakHourEnd : null,
         peakHourMultiplier: dynamicPricing.dynamicPricingEnabled ? dynamicPricing.peakHourMultiplier : null,
         offPeakMultiplier: dynamicPricing.dynamicPricingEnabled ? dynamicPricing.offPeakMultiplier : null,
         weekendMultiplier: dynamicPricing.dynamicPricingEnabled ? dynamicPricing.weekendMultiplier : null,
+        // Maintenance
         maintenanceMode: maintenance.maintenanceMode,
         maintenanceStartTime: maintenance.maintenanceMode ? maintenance.maintenanceStartTime : null,
         maintenanceEndTime: maintenance.maintenanceMode ? maintenance.maintenanceEndTime : null
@@ -320,10 +356,11 @@ export default function AddCourt() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Booking Duration (Hours)
+                  Minimum Booking Duration (Hours) *
                 </label>
                 <input
                   type="number"
+                  required
                   min="1"
                   value={pricing.minBookingDuration}
                   onChange={(e) => handlePricingChange('minBookingDuration', parseInt(e.target.value))}
@@ -335,10 +372,11 @@ export default function AddCourt() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maximum Booking Duration (Hours)
+                Maximum Booking Duration (Hours) *
               </label>
               <input
                 type="number"
+                required
                 min="1"
                 value={pricing.maxBookingDuration}
                 onChange={(e) => handlePricingChange('maxBookingDuration', parseInt(e.target.value))}
