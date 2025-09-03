@@ -80,7 +80,13 @@ export default function Venues() {
           
           // Set courts if they exist
           if (venueData.courts && Array.isArray(venueData.courts)) {
-            setCourts(venueData.courts);
+            // Map court data to ensure consistent field names
+            const mappedCourts = venueData.courts.map(court => ({
+              ...court,
+              courtType: court.type || court.courtType, // Use type field as courtType
+              name: court.name || court.courtName // Use name field consistently
+            }));
+            setCourts(mappedCourts);
           } else {
             setCourts([]);
           }
@@ -125,11 +131,11 @@ export default function Venues() {
 
   const filteredCourts = courts.filter(court => {
     const courtName = court.name || '';
-    const courtType = court.courtType || '';
+    const courtType = court.courtType || court.type || '';
     
     const matchesSearch = courtName.toLowerCase().includes(courtSearchTerm.toLowerCase()) ||
                          courtType.toLowerCase().includes(courtSearchTerm.toLowerCase());
-    const matchesType = courtTypeFilter === "ALL" || court.courtType === courtTypeFilter;
+    const matchesType = courtTypeFilter === "ALL" || (court.courtType || court.type) === courtTypeFilter;
     
     return matchesSearch && matchesType;
   });
@@ -276,7 +282,9 @@ export default function Venues() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Quick Stats</h3>
               <div className="space-y-2">
                 <p className="text-sm text-gray-600"><span className="font-medium">Total Courts:</span> {courts.length}</p>
-                <p className="text-sm text-gray-600"><span className="font-medium">Base Price:</span> LKR {venues[0].basePrice}/hour</p>
+                {venues[0].basePrice && (
+                  <p className="text-sm text-gray-600"><span className="font-medium">Base Price:</span> LKR {venues[0].basePrice}/hour</p>
+                )}
                 <p className="text-sm text-gray-600"><span className="font-medium">Max Capacity:</span> {venues[0].maxCapacity}</p>
               </div>
             </div>
@@ -374,14 +382,14 @@ export default function Venues() {
                 <div key={court.courtId} className="bg-gray-50 rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">{court.name}</h3>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCourtTypeColor(court.courtType)}`}>
-                      {court.courtType}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCourtTypeColor(court.courtType || court.type)}`}>
+                      {court.courtType || court.type || 'Unknown'}
                     </span>
                   </div>
                   
                   <div className="space-y-2 mb-4">
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Type:</span> {court.courtType}
+                      <span className="font-medium">Type:</span> {court.courtType || court.type || 'Unknown'}
                     </p>
                     <p className="text-sm text-gray-600">
                       <span className="font-medium">Price:</span> LKR {court.pricePerHour || 0}/hour

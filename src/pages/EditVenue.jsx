@@ -100,8 +100,9 @@ export default function EditVenue() {
 
     try {
       // Validate required fields
-      if (!basicInfo.maxCapacity || basicInfo.maxCapacity.trim() === '') {
-        alert('Maximum Capacity is required. Please enter a value.');
+      const maxCapacity = basicInfo.maxCapacity;
+      if (!maxCapacity || maxCapacity === '' || (typeof maxCapacity === 'string' && maxCapacity.trim() === '') || maxCapacity <= 0) {
+        alert('Maximum Capacity is required. Please enter a valid number greater than 0.');
         setLoading(false);
         return;
       }
