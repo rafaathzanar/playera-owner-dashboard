@@ -557,26 +557,6 @@ export default function TimeSlotManagement() {
               </button>
             ))}
           </div>
-          
-          {/* Debug Info */}
-          <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs text-gray-600">
-            <p><strong>Debug Info:</strong></p>
-            <p>Venue ID: {venueId}</p>
-            <p>Courts loaded: {courts.length}</p>
-            <p>Selected court: {selectedCourt ? `${selectedCourt.courtName} (ID: ${selectedCourt.courtId})` : 'None'}</p>
-            <p>Current date: {selectedDate.toISOString().split('T')[0]}</p>
-            <p>Time slots loaded: {timeSlots.length}</p>
-            {selectedCourt && (
-              <>
-                <p><strong>Court Settings:</strong></p>
-                <p>Opening Time: {selectedCourt.openingTime || 'NOT SET'}</p>
-                <p>Closing Time: {selectedCourt.closingTime || 'NOT SET'}</p>
-                <p>Slot Duration: {selectedCourt.slotDurationMinutes || 'NOT SET'} minutes</p>
-                <p>Weekend Active: {selectedCourt.isActiveOnWeekends ? 'Yes' : 'No'}</p>
-                <p>Holiday Active: {selectedCourt.isActiveOnHolidays ? 'Yes' : 'No'}</p>
-              </>
-            )}
-          </div>
         </div>
 
         {selectedCourt && (
