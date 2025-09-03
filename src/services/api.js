@@ -137,6 +137,25 @@ class ApiService {
     return await this.request(`/venues/owner/${ownerId}`);
   }
 
+  // Analytics API methods
+  async getVenueAnalytics(venueId, dateRange = "month") {
+    return await this.request(
+      `/analytics/venue/${venueId}?dateRange=${dateRange}`
+    );
+  }
+
+  async getVenueRevenueAnalytics(venueId, dateRange = "month") {
+    return await this.request(
+      `/analytics/venue/${venueId}/revenue?dateRange=${dateRange}`
+    );
+  }
+
+  async getVenueOccupancyAnalytics(venueId, dateRange = "month") {
+    return await this.request(
+      `/analytics/venue/${venueId}/occupancy?dateRange=${dateRange}`
+    );
+  }
+
   // Court Management APIs
   async getCourts(venueId) {
     return await this.request(`/courts/venue/${venueId}`);
@@ -202,8 +221,10 @@ class ApiService {
     );
   }
 
-  async getVenueAnalytics(venueId, period) {
-    return await this.request(`/venues/${venueId}/analytics?period=${period}`);
+  async getVenueAnalytics(venueId, dateRange = "month") {
+    return await this.request(
+      `/analytics/venue/${venueId}?dateRange=${dateRange}`
+    );
   }
 
   // Payment APIs
