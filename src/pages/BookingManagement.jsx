@@ -107,6 +107,7 @@ export default function BookingManagement() {
             specialRequests: booking.specialRequests || '',
             bookingDate: booking.createdAt || new Date().toISOString(),
             paymentStatus: 'PENDING', // Default for now
+            timeSlotRanges: booking.timeSlotRanges || [], // Add timeSlotRanges to transformation
             equipmentBookings: booking.equipmentBookings?.map(eq => ({
               name: eq.name || 'Unknown Equipment',
               quantity: eq.quantity || 0,
