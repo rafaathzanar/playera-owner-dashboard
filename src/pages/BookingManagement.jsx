@@ -66,9 +66,25 @@ export default function BookingManagement() {
           venueId: venueData.venueId
         });
 
-        // Fetch real bookings from backend
-        const bookingsData = await api.getBookings(venueData.venueId);
-        console.log('Bookings data received:', bookingsData);
+        // Fetch real bookings from backend - using same approach as mobile app
+        // First try to get all bookings and filter by venue
+        const allBookingsData = await api.getBookings(); // Get all bookings
+        console.log('=== VENUE DASHBOARD API DEBUG ===');
+        console.log('All bookings data received:', allBookingsData);
+        console.log('Number of bookings:', allBookingsData.length);
+        
+        // Check first few bookings for timeSlotRanges
+        if (allBookingsData.length > 0) {
+          console.log('First booking timeSlotRanges:', allBookingsData[0].timeSlotRanges);
+          console.log('First booking structure:', Object.keys(allBookingsData[0]));
+        }
+        console.log('=== END VENUE DASHBOARD API DEBUG ===');
+        
+        // Filter bookings for this venue
+        const bookingsData = allBookingsData.filter(booking => 
+          booking.venueId === venueData.venueId
+        );
+        console.log('Filtered bookings for venue:', bookingsData);
         
         if (bookingsData && Array.isArray(bookingsData)) {
           // Transform backend data to match frontend structure
@@ -92,7 +108,7 @@ export default function BookingManagement() {
             bookingDate: booking.createdAt || new Date().toISOString(),
             paymentStatus: 'PENDING', // Default for now
             equipmentBookings: booking.equipmentBookings?.map(eq => ({
-              name: eq.equipmentName || 'Unknown Equipment',
+              name: eq.name || 'Unknown Equipment',
               quantity: eq.quantity || 0,
               cost: eq.totalPrice || 0
             })) || []
@@ -214,6 +230,27 @@ export default function BookingManagement() {
     }
   };
 
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    
+    // Handle LocalTime format from backend (HH:MM:SS)
+    if (typeof timeString === 'string' && timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return timeString.substring(0, 5); // "06:00:00" -> "06:00"
+    }
+    
+    // If it's already in HH:MM format, return as is
+    if (typeof timeString === 'string' && timeString.includes(':') && timeString.split(':').length === 2) {
+      return timeString;
+    }
+    
+    // If it's in HH:MM:SS format, remove seconds
+    if (typeof timeString === 'string' && timeString.includes(':') && timeString.split(':').length === 3) {
+      return timeString.substring(0, 5); // Remove seconds
+    }
+    
+    return timeString;
+  };
+
   const calculateStats = () => {
     const totalBookings = bookings.length;
     const pendingBookings = bookings.filter(b => b.status === 'PENDING').length;
@@ -263,10 +300,6 @@ export default function BookingManagement() {
                   <p className="text-gray-900">{booking.customerName}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Email</p>
-                  <p className="text-gray-900">{booking.customerEmail}</p>
-                </div>
-                <div>
                   <p className="text-sm font-medium text-gray-600">Phone</p>
                   <p className="text-gray-900">{booking.customerPhone}</p>
                 </div>
@@ -279,21 +312,15 @@ export default function BookingManagement() {
                 <CalendarIcon className="w-5 h-5 mr-2" />
                 Booking Details
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Court</p>
-                  <p className="text-gray-900">{booking.courtName} ({booking.courtType})</p>
-                </div>
+              
+              {/* General Booking Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Date</p>
                   <p className="text-gray-900">{new Date(booking.date).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Time</p>
-                  <p className="text-gray-900">{booking.startTime} - {booking.endTime}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Duration</p>
+                  <p className="text-sm font-medium text-gray-600">Total Duration</p>
                   <p className="text-gray-900">{booking.duration} hours</p>
                 </div>
                 <div>
@@ -309,17 +336,111 @@ export default function BookingManagement() {
                   </span>
                 </div>
               </div>
+
+              {/* Court Bookings */}
+              <div>
+                <h4 className="text-md font-medium text-gray-800 mb-2">Court Bookings</h4>
+                <div className="space-y-3">
+                  {booking.courtBookings && booking.courtBookings.length > 0 ? (
+                    booking.courtBookings.map((courtBooking, index) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded-lg border">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Court</p>
+                            <p className="text-gray-900">{courtBooking.courtName}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Type</p>
+                            <p className="text-gray-900 capitalize">{courtBooking.courtType?.toLowerCase() || 'Unknown'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Duration</p>
+                            <p className="text-gray-900">{courtBooking.timeDuration} hours</p>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-gray-600">Time Slot</p>
+                          {booking.timeSlotRanges && booking.timeSlotRanges.length > 0 ? (
+                            <div className="text-gray-900">
+                              {booking.timeSlotRanges.map((range, index) => (
+                                <p key={index}>
+                                  {formatTime(range.startTime)} - {formatTime(range.endTime)}
+                                </p>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-900">{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="bg-gray-50 p-3 rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Court</p>
+                          <p className="text-gray-900">{booking.courtName}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Type</p>
+                          <p className="text-gray-900 capitalize">{booking.courtType?.toLowerCase() || 'Unknown'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Duration</p>
+                          <p className="text-gray-900">{booking.duration} hours</p>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-gray-600">Time Slot</p>
+                        {(() => {
+                          console.log('=== DASHBOARD MODAL TIME DISPLAY DEBUG ===');
+                          console.log('Booking ID:', booking.bookingId);
+                          console.log('timeSlotRanges:', booking.timeSlotRanges);
+                          console.log('timeSlotRanges length:', booking.timeSlotRanges?.length);
+                          console.log('startTime:', booking.startTime);
+                          console.log('endTime:', booking.endTime);
+                          console.log('=== END DASHBOARD MODAL TIME DISPLAY DEBUG ===');
+                          
+                          return booking.timeSlotRanges && booking.timeSlotRanges.length > 0 ? (
+                            <div className="text-gray-900">
+                              {booking.timeSlotRanges.map((range, index) => (
+                                <p key={index}>
+                                  {formatTime(range.startTime)} - {formatTime(range.endTime)}
+                                </p>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-900">{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</p>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Equipment */}
             {booking.equipmentBookings && booking.equipmentBookings.length > 0 && (
               <div className="border-b pb-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Equipment</h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {booking.equipmentBookings.map((equipment, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span>{equipment.name} x{equipment.quantity}</span>
-                      <span className="font-medium">LKR {equipment.cost}</span>
+                    <div key={index} className="bg-gray-50 p-3 rounded-lg border">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Equipment</p>
+                          <p className="text-gray-900">{equipment.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Quantity</p>
+                          <p className="text-gray-900">x{equipment.quantity}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Cost</p>
+                          <p className="text-gray-900 font-medium">LKR {equipment.cost}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -516,7 +637,7 @@ export default function BookingManagement() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
               <input
                 type="text"
-                placeholder="Customer, court, email..."
+                placeholder="Customer, court, phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -631,7 +752,7 @@ export default function BookingManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{booking.customerName}</div>
-                        <div className="text-sm text-gray-500">{booking.customerEmail}</div>
+                        <div className="text-sm text-gray-500">{booking.customerPhone}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -646,7 +767,25 @@ export default function BookingManagement() {
                           {new Date(booking.date).toLocaleDateString()}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {booking.startTime} - {booking.endTime}
+                          {(() => {
+                            console.log('=== DASHBOARD TIME DISPLAY DEBUG ===');
+                            console.log('Booking ID:', booking.bookingId);
+                            console.log('timeSlotRanges:', booking.timeSlotRanges);
+                            console.log('timeSlotRanges length:', booking.timeSlotRanges?.length);
+                            console.log('startTime:', booking.startTime);
+                            console.log('endTime:', booking.endTime);
+                            console.log('=== END DASHBOARD TIME DISPLAY DEBUG ===');
+                            
+                            return booking.timeSlotRanges && booking.timeSlotRanges.length > 0 ? (
+                              booking.timeSlotRanges.map((range, index) => (
+                                <div key={index}>
+                                  {formatTime(range.startTime)} - {formatTime(range.endTime)}
+                                </div>
+                              ))
+                            ) : (
+                              <div>{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</div>
+                            );
+                          })()}
                         </div>
                       </div>
                     </td>
