@@ -356,7 +356,7 @@ export default function DynamicPricing() {
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
                   <CurrencyDollarIcon className="h-8 w-8 text-gray-600 mx-auto mb-2" />
                   <h3 className="font-medium text-gray-900">Base Price</h3>
-                  <p className="text-2xl font-bold text-gray-900">${selectedCourt.pricePerHour}</p>
+                  <p className="text-2xl font-bold text-gray-900">LKR {selectedCourt.pricePerHour}</p>
                   <p className="text-sm text-gray-600">per hour</p>
             </div>
 

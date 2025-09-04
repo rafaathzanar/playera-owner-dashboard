@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import { getCurrentDateUTC, getDateFromNowUTC } from '../utils/dateUtils';
 
 export default function TimeSlotManagement() {
   const { venueId } = useParams();
@@ -297,8 +298,8 @@ export default function TimeSlotManagement() {
 
   const handleGenerateSlots = async () => {
     try {
-      const startDate = new Date().toISOString().split('T')[0];
-      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 30 days from now
+      const startDate = getCurrentDateUTC();
+      const endDate = getDateFromNowUTC(30); // 30 days from now
       
       await api.generateTimeSlots(selectedCourt.courtId, startDate, endDate);
       alert('Time slots generated successfully!');
@@ -553,7 +554,7 @@ export default function TimeSlotManagement() {
               >
                 <h3 className="font-medium text-gray-900">{court.courtName}</h3>
                 <p className="text-sm text-gray-600">{court.type}</p>
-                <p className="text-sm text-gray-600">${court.pricePerHour}/hour</p>
+                <p className="text-sm text-gray-600">LKR {court.pricePerHour}/hour</p>
               </button>
             ))}
           </div>
@@ -818,7 +819,7 @@ export default function TimeSlotManagement() {
                     type="date"
                     value={recurringBlockForm.startDate}
                     onChange={(e) => setRecurringBlockForm({...recurringBlockForm, startDate: e.target.value})}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={getCurrentDateUTC()}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                     required
                   />
@@ -830,7 +831,7 @@ export default function TimeSlotManagement() {
                 type="date"
                     value={recurringBlockForm.endDate}
                     onChange={(e) => setRecurringBlockForm({...recurringBlockForm, endDate: e.target.value})}
-                    min={recurringBlockForm.startDate || new Date().toISOString().split('T')[0]}
+                    min={recurringBlockForm.startDate || getCurrentDateUTC()}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
                     required
               />

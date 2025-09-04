@@ -15,6 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import { getCurrentDateUTC, formatDateUTC, getDateFromNowUTC, debugDate } from "../utils/dateUtils";
 
 export default function BookingManagement() {
   const { venueId } = useParams();
@@ -32,11 +33,16 @@ export default function BookingManagement() {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [courtFilter, setCourtFilter] = useState('all');
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: ''
   });
+
+  // Sorting
+  const [sortBy, setSortBy] = useState('date'); // 'date' or 'total'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
 
   useEffect(() => {
     fetchVenueAndBookings();
@@ -44,7 +50,7 @@ export default function BookingManagement() {
 
   useEffect(() => {
     filterBookings();
-  }, [bookings, statusFilter, courtFilter, searchTerm, dateFilter, dateRange]);
+}, [bookings, statusFilter, paymentStatusFilter, courtFilter, searchTerm, dateFilter, dateRange, sortBy, sortOrder]);
 
   const fetchVenueAndBookings = async () => {
     try {
@@ -61,7 +67,7 @@ export default function BookingManagement() {
       console.log('Venue data received:', venueData);
       
       if (venueData && venueData.venueId) {
-        setVenue({
+      setVenue({
           name: venueData.name || 'Sports Venue',
           venueId: venueData.venueId
         });
@@ -96,7 +102,7 @@ export default function BookingManagement() {
             venueName: venueData.name,
             courtName: booking.courtBookings?.[0]?.courtName || 'Unknown Court',
             courtType: booking.courtBookings?.[0]?.courtType || 'UNKNOWN',
-            date: booking.bookingDate ? new Date(booking.bookingDate).toISOString().split('T')[0] : 'Unknown Date',
+            date: booking.bookingDate ? formatDateUTC(booking.bookingDate) : 'Unknown Date',
             startTime: booking.startTime || '00:00',
             endTime: booking.endTime || '00:00',
             duration: booking.duration || 0,
@@ -106,7 +112,10 @@ export default function BookingManagement() {
             equipmentCost: 0, // Will be calculated from equipment bookings
             specialRequests: booking.specialRequests || '',
             bookingDate: booking.createdAt || new Date().toISOString(),
-            paymentStatus: 'PENDING', // Default for now
+            paymentStatus: booking.paymentStatus || 'PENDING',
+            paymentMethod: booking.paymentMethod || 'CARD',
+            paymentAmount: booking.paymentAmount || booking.totalCost,
+            stripePaymentIntentId: booking.stripePaymentIntentId || null,
             timeSlotRanges: booking.timeSlotRanges || [], // Add timeSlotRanges to transformation
             equipmentBookings: booking.equipmentBookings?.map(eq => ({
               name: eq.name || 'Unknown Equipment',
@@ -125,13 +134,45 @@ export default function BookingManagement() {
         setVenue(null);
         setBookings([]);
       }
-          } catch (error) {
-        console.error('Error fetching venue and bookings:', error);
+    } catch (error) {
+      console.error('Error fetching venue and bookings:', error);
         setVenue(null);
         setBookings([]);
-      } finally {
+    } finally {
       setLoading(false);
     }
+  };
+
+  // Sorting functions
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      // Toggle sort order if same column
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to desc
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+  };
+
+  const sortBookings = (bookings) => {
+    return [...bookings].sort((a, b) => {
+      let aValue, bValue;
+      
+      if (sortBy === 'date') {
+        aValue = new Date(a.date);
+        bValue = new Date(b.date);
+      } else if (sortBy === 'total') {
+        aValue = a.totalCost;
+        bValue = b.totalCost;
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
   };
 
   const filterBookings = () => {
@@ -140,6 +181,11 @@ export default function BookingManagement() {
     // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(booking => booking.status === statusFilter);
+    }
+
+    // Payment status filter
+    if (paymentStatusFilter !== 'all') {
+      filtered = filtered.filter(booking => booking.paymentStatus === paymentStatusFilter);
     }
 
     // Court filter
@@ -158,10 +204,10 @@ export default function BookingManagement() {
 
     // Date filter
     if (dateFilter === 'today') {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getCurrentDateUTC();
       filtered = filtered.filter(booking => booking.date === today);
     } else if (dateFilter === 'tomorrow') {
-      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const tomorrow = getDateFromNowUTC(1);
       filtered = filtered.filter(booking => booking.date === tomorrow);
     } else if (dateFilter === 'thisWeek') {
       const today = new Date();
@@ -180,7 +226,9 @@ export default function BookingManagement() {
       });
     }
 
-    setFilteredBookings(filtered);
+    // Apply sorting
+    const sorted = sortBookings(filtered);
+    setFilteredBookings(sorted);
   };
 
   const handleStatusChange = async (bookingId, newStatus) => {
@@ -218,14 +266,20 @@ export default function BookingManagement() {
 
   const getPaymentStatusColor = (status) => {
     switch (status) {
-      case 'PAID':
+      case 'SUCCEEDED':
         return 'bg-green-100 text-green-800';
       case 'PENDING':
         return 'bg-yellow-100 text-yellow-800';
+      case 'PROCESSING':
+        return 'bg-blue-100 text-blue-800';
       case 'FAILED':
         return 'bg-red-100 text-red-800';
-      case 'REFUNDED':
+      case 'CANCELLED':
         return 'bg-gray-100 text-gray-800';
+      case 'REFUNDED':
+        return 'bg-purple-100 text-purple-800';
+      case 'PARTIALLY_REFUNDED':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -256,17 +310,41 @@ export default function BookingManagement() {
     const totalBookings = bookings.length;
     const pendingBookings = bookings.filter(b => b.status === 'PENDING').length;
     const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED').length;
+    
+    // Calculate revenue from successful payments
     const totalRevenue = bookings
-      .filter(b => b.status === 'CONFIRMED' && b.paymentStatus === 'PAID')
-      .reduce((sum, b) => sum + b.totalCost, 0);
-    const todayBookings = bookings.filter(b => b.date === new Date().toISOString().split('T')[0]).length;
+      .filter(b => b.paymentStatus === 'SUCCEEDED')
+      .reduce((sum, b) => sum + (b.paymentAmount || b.totalCost), 0);
+    
+    // Calculate pending payments
+    const pendingPayments = bookings
+      .filter(b => b.paymentStatus === 'PENDING' || b.paymentStatus === 'PROCESSING')
+      .reduce((sum, b) => sum + (b.paymentAmount || b.totalCost), 0);
+    
+    // Calculate failed payments
+    const failedPayments = bookings
+      .filter(b => b.paymentStatus === 'FAILED')
+      .reduce((sum, b) => sum + (b.paymentAmount || b.totalCost), 0);
+    
+    const todayBookings = bookings.filter(b => b.date === getCurrentDateUTC()).length;
+    
+    // Payment status breakdown
+    const paymentStats = {
+      succeeded: bookings.filter(b => b.paymentStatus === 'SUCCEEDED').length,
+      pending: bookings.filter(b => b.paymentStatus === 'PENDING' || b.paymentStatus === 'PROCESSING').length,
+      failed: bookings.filter(b => b.paymentStatus === 'FAILED').length,
+      cancelled: bookings.filter(b => b.paymentStatus === 'CANCELLED').length
+    };
 
     return {
       totalBookings,
       pendingBookings,
       confirmedBookings,
       totalRevenue,
-      todayBookings
+      pendingPayments,
+      failedPayments,
+      todayBookings,
+      paymentStats
     };
   };
 
@@ -332,9 +410,16 @@ export default function BookingManagement() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Payment Status</p>
+                  <div className="flex flex-col space-y-1">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(booking.paymentStatus)}`}>
                     {booking.paymentStatus}
                   </span>
+                    {booking.paymentMethod && (
+                      <span className="text-xs text-gray-500 capitalize">
+                        {booking.paymentMethod.toLowerCase().replace('_', ' ')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -477,6 +562,31 @@ export default function BookingManagement() {
                   <span>Total:</span>
                   <span>LKR {booking.totalCost}</span>
                 </div>
+                
+                {/* Payment Details */}
+                {booking.paymentAmount && (
+                  <div className="mt-3 pt-3 border-t">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Amount Paid:</span>
+                      <span className="font-medium text-green-600">LKR {booking.paymentAmount}</span>
+              </div>
+                    {booking.paymentAmount !== booking.totalCost && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Outstanding:</span>
+                        <span className="font-medium text-red-600">LKR {(booking.totalCost - booking.paymentAmount).toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Stripe Payment Intent ID */}
+                {booking.stripePaymentIntentId && (
+                  <div className="mt-2 pt-2 border-t">
+                    <div className="text-xs text-gray-500">
+                      <span className="font-medium">Transaction ID:</span> {booking.stripePaymentIntentId}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -608,12 +718,36 @@ export default function BookingManagement() {
 
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
             <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-purple-500">
+              <div className="p-3 rounded-lg bg-green-500">
                 <CurrencyDollarIcon className="h-6 w-6 text-white" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Revenue</p>
+                <p className="text-sm font-medium text-gray-600">Revenue (Paid)</p>
                 <p className="text-2xl font-semibold text-gray-900">LKR {stats.totalRevenue.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-yellow-500">
+                <CurrencyDollarIcon className="h-6 w-6 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Pending Payments</p>
+                <p className="text-2xl font-semibold text-gray-900">LKR {stats.pendingPayments.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-red-500">
+                <CurrencyDollarIcon className="h-6 w-6 text-white" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Failed Payments</p>
+                <p className="text-2xl font-semibold text-gray-900">LKR {stats.failedPayments.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -658,6 +792,23 @@ export default function BookingManagement() {
                 <option value="CANCELLED">Cancelled</option>
                 <option value="COMPLETED">Completed</option>
                 <option value="NO_SHOW">No Show</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="all">All Payments</option>
+                <option value="SUCCEEDED">Paid</option>
+                <option value="PENDING">Pending</option>
+                <option value="PROCESSING">Processing</option>
+                <option value="FAILED">Failed</option>
+                <option value="CANCELLED">Cancelled</option>
+                <option value="REFUNDED">Refunded</option>
               </select>
             </div>
 
@@ -716,9 +867,20 @@ export default function BookingManagement() {
         {/* Bookings Table */}
         <div className="bg-white rounded-lg shadow border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Bookings ({filteredBookings.length})
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Bookings ({filteredBookings.length})
+              </h2>
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <span>Sorted by:</span>
+                <span className="font-medium text-orange-600 capitalize">
+                  {sortBy === 'date' ? 'Date & Time' : 'Total Amount'}
+                </span>
+                <span className="text-gray-400">
+                  ({sortOrder === 'asc' ? 'Ascending' : 'Descending'})
+                </span>
+              </div>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -731,7 +893,28 @@ export default function BookingManagement() {
                     Court
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date & Time
+                    <button
+                      onClick={() => handleSort('date')}
+                      className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
+                    >
+                      <span>Date & Time</span>
+                      <div className="flex flex-col">
+                        <svg 
+                          className={`w-3 h-3 ${sortBy === 'date' && sortOrder === 'asc' ? 'text-orange-500' : 'text-gray-400'}`}
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        </svg>
+                        <svg 
+                          className={`w-3 h-3 ${sortBy === 'date' && sortOrder === 'desc' ? 'text-orange-500' : 'text-gray-400'}`}
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </button>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -740,7 +923,28 @@ export default function BookingManagement() {
                     Payment
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
+                    <button
+                      onClick={() => handleSort('total')}
+                      className="flex items-center space-x-1 hover:text-gray-700 focus:outline-none"
+                    >
+                      <span>Total</span>
+                      <div className="flex flex-col">
+                        <svg 
+                          className={`w-3 h-3 ${sortBy === 'total' && sortOrder === 'asc' ? 'text-orange-500' : 'text-gray-400'}`}
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        </svg>
+                        <svg 
+                          className={`w-3 h-3 ${sortBy === 'total' && sortOrder === 'desc' ? 'text-orange-500' : 'text-gray-400'}`}
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </button>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -796,12 +1000,26 @@ export default function BookingManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col space-y-1">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(booking.paymentStatus)}`}>
                         {booking.paymentStatus}
                       </span>
+                        {booking.paymentMethod && (
+                          <span className="text-xs text-gray-500 capitalize">
+                            {booking.paymentMethod.toLowerCase().replace('_', ' ')}
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
                       LKR {booking.totalCost.toLocaleString()}
+                      </div>
+                      {booking.paymentAmount && booking.paymentAmount !== booking.totalCost && (
+                        <div className="text-xs text-gray-500">
+                          Paid: LKR {booking.paymentAmount.toLocaleString()}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
