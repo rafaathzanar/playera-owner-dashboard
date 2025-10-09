@@ -7,10 +7,12 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   CogIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  PhotoIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import ImageUpload from "../components/ImageUpload";
 
 export default function CourtManagement() {
   const { venueId } = useParams();
@@ -20,7 +22,9 @@ export default function CourtManagement() {
   const [courts, setCourts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [editingCourt, setEditingCourt] = useState(null);
+  const [selectedCourt, setSelectedCourt] = useState(null);
   const [venue, setVenue] = useState(null);
 
   // Court form state
@@ -196,6 +200,39 @@ export default function CourtManagement() {
       maintenanceMode: court.maintenanceMode || false
     });
     setShowEditModal(true);
+  };
+
+  const openImageModal = (court) => {
+    setSelectedCourt(court);
+    setShowImageModal(true);
+  };
+
+  const handleImageUpload = async (files) => {
+    if (!selectedCourt) return;
+    
+    try {
+      await api.uploadCourtImages(selectedCourt.courtId, files);
+      // Refresh courts data to show updated images
+      await fetchCourts();
+      alert('Images uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images. Please try again.');
+    }
+  };
+
+  const handleImageDelete = async (imageUrl) => {
+    if (!selectedCourt) return;
+    
+    try {
+      await api.deleteCourtImage(selectedCourt.courtId, imageUrl);
+      // Refresh courts data to show updated images
+      await fetchCourts();
+      alert('Image deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Failed to delete image. Please try again.');
+    }
   };
 
   const resetForm = () => {
@@ -718,12 +755,21 @@ export default function CourtManagement() {
                     <button
                       onClick={() => openEditModal(court)}
                       className="text-blue-600 hover:text-blue-700 p-2"
+                      title="Edit Court"
                     >
                       <PencilIcon className="w-4 h-4" />
                     </button>
                     <button
+                      onClick={() => openImageModal(court)}
+                      className="text-green-600 hover:text-green-700 p-2"
+                      title="Manage Images"
+                    >
+                      <PhotoIcon className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => handleDeleteCourt(court.courtId)}
                       className="text-red-600 hover:text-red-700 p-2"
+                      title="Delete Court"
                     >
                       <TrashIcon className="w-4 h-4" />
                     </button>
@@ -780,6 +826,43 @@ export default function CourtManagement() {
         title="Edit Court"
         submitText="Update Court"
       />
+
+      {/* Image Management Modal */}
+      {showImageModal && selectedCourt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Manage Images - {selectedCourt.courtName}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowImageModal(false);
+                  setSelectedCourt(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Upload and manage images for this court. These images will be displayed in the mobile app.
+              </p>
+              
+              <ImageUpload
+                images={selectedCourt.images || []}
+                onUpload={handleImageUpload}
+                onDelete={handleImageDelete}
+                maxImages={10}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

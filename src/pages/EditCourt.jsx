@@ -7,10 +7,12 @@ import {
   CogIcon,
   MapPinIcon,
   CloudIcon,
-  LightBulbIcon
+  LightBulbIcon,
+  PhotoIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import ImageUpload from "../components/ImageUpload";
 
 export default function EditCourt() {
   const navigate = useNavigate();
@@ -70,6 +72,9 @@ export default function EditCourt() {
     maintenanceStartTime: '00:00',
     maintenanceEndTime: '06:00'
   });
+
+  // Images
+  const [images, setImages] = useState([]);
 
   useEffect(() => {
     if (courtId) {
@@ -135,6 +140,9 @@ export default function EditCourt() {
         maintenanceEndTime: courtData.maintenanceEndTime || '06:00'
       });
 
+      // Set images
+      setImages(courtData.images || []);
+
     } catch (error) {
       console.error("Error fetching court data:", error);
       alert("Failed to fetch court data. Please try again.");
@@ -165,6 +173,30 @@ export default function EditCourt() {
 
   const handleMaintenanceChange = (field, value) => {
     setMaintenance(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = async (files) => {
+    try {
+      await api.uploadCourtImages(courtId, files);
+      // Refresh court data to show updated images
+      await fetchCourtData();
+      alert('Images uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images. Please try again.');
+    }
+  };
+
+  const handleImageDelete = async (imageUrl) => {
+    try {
+      await api.deleteCourtImage(courtId, imageUrl);
+      // Refresh court data to show updated images
+      await fetchCourtData();
+      alert('Image deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Failed to delete image. Please try again.');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -246,7 +278,8 @@ export default function EditCourt() {
     { id: 'pricing', name: 'Pricing & Duration', icon: CurrencyDollarIcon },
     { id: 'hours', name: 'Operating Hours', icon: ClockIcon },
     { id: 'pricing-dynamic', name: 'Dynamic Pricing', icon: CogIcon },
-    { id: 'maintenance', name: 'Maintenance', icon: CogIcon }
+    { id: 'maintenance', name: 'Maintenance', icon: CogIcon },
+    { id: 'images', name: 'Images', icon: PhotoIcon }
   ];
 
   const renderTabContent = () => {
@@ -696,6 +729,28 @@ export default function EditCourt() {
                 </div>
               </div>
             )}
+          </div>
+        );
+
+      case 'images':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <PhotoIcon className="h-5 w-5 mr-2 text-orange-600" />
+                Court Images
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Upload and manage images of your court to showcase it to customers. These will be displayed in the mobile app.
+              </p>
+              
+              <ImageUpload
+                images={images}
+                onUpload={handleImageUpload}
+                onDelete={handleImageDelete}
+                maxImages={10}
+              />
+            </div>
           </div>
         );
 

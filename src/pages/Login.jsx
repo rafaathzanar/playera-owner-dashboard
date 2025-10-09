@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -9,14 +9,14 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -26,15 +26,15 @@ export default function Login() {
 
     try {
       const result = await login(formData);
-      
+
       if (result.success) {
-        navigate('/');
+        navigate("/");
       } else {
         alert(`Login failed: ${result.error}`);
       }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Login failed. Please try again.');
+      console.error("Login error:", error);
+      alert("Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ export default function Login() {
             Access your venue management dashboard
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
@@ -77,7 +77,7 @@ export default function Login() {
               <input
                 id="password"
                 name="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
                 value={formData.password}
@@ -108,21 +108,18 @@ export default function Login() {
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               ) : (
-                'Sign in'
+                "Sign in"
               )}
             </button>
           </div>
 
           <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Demo credentials: testowner@playera.com / password123
-            </p>
             <div className="mt-4">
               <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
+                Don't have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate("/signup")}
                   className="font-medium text-orange-600 hover:text-orange-500"
                 >
                   Create venue owner account
