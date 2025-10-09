@@ -3,15 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeftIcon,
   BuildingOfficeIcon,
-  MapPinIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  GlobeAltIcon,
-  CurrencyDollarIcon,
-  ClockIcon
+  ClockIcon,
+  PhotoIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import ImageUpload from "../components/ImageUpload";
 
 export default function AddVenue() {
   const navigate = useNavigate();
@@ -41,6 +38,9 @@ export default function AddVenue() {
   const [businessHours, setBusinessHours] = useState({
     openingHours: '6:00 AM - 11:00 PM'
   });
+
+  // Images
+  const [images, setImages] = useState([]);
 
   const handleBasicInfoChange = (field, value) => {
     setBasicInfo(prev => ({ ...prev, [field]: value }));
@@ -79,7 +79,7 @@ export default function AddVenue() {
         venueType: basicInfo.venueType,
         maxCapacity: parseInt(basicInfo.maxCapacity),
         status: basicInfo.status,
-
+        images: [], // Start with empty array - images will be uploaded separately
         openingHours: businessHours.openingHours,
         // Add owner ID to associate venue with the current user
         ownerId: user.userId
@@ -91,6 +91,17 @@ export default function AddVenue() {
       const response = await api.createVenue(venueData);
       console.log("Venue created successfully:", response);
       
+      // If we have images to upload, upload them after venue creation
+      if (images.length > 0 && response.venueId) {
+        try {
+          await api.uploadVenueImages(response.venueId, images);
+          console.log("Images uploaded successfully");
+        } catch (imageError) {
+          console.error("Error uploading images:", imageError);
+          alert("Venue created but failed to upload images. You can upload them later.");
+        }
+      }
+      
       // Navigate back to venues page
       navigate("/venues");
     } catch (error) {
@@ -101,9 +112,25 @@ export default function AddVenue() {
     }
   };
 
+  const handleImageUpload = async (files) => {
+    try {
+      // For venue creation, we'll store the files and upload them after venue is created
+      setImages(prev => [...prev, ...files]);
+    } catch (error) {
+      console.error('Error preparing images:', error);
+      alert('Failed to prepare images. Please try again.');
+    }
+  };
+
+  const handleImageDelete = async (imageUrl) => {
+    // For venue creation, remove from local state
+    setImages(prev => prev.filter(img => img !== imageUrl));
+  };
+
   const tabs = [
     { id: 'basic', name: 'Basic Information', icon: BuildingOfficeIcon },
-    { id: 'hours', name: 'Business Hours', icon: ClockIcon }
+    { id: 'hours', name: 'Business Hours', icon: ClockIcon },
+    { id: 'images', name: 'Images', icon: PhotoIcon }
   ];
 
   const renderTabContent = () => {
@@ -281,6 +308,31 @@ export default function AddVenue() {
 
 
 
+
+      case 'images':
+        return (
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <PhotoIcon className="h-5 w-5 text-blue-600 mr-2" />
+                <h3 className="text-sm font-medium text-blue-900">Venue Images</h3>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                Upload images of your venue to showcase it to customers. These will be displayed in the mobile app.
+              </p>
+            </div>
+
+            <ImageUpload
+              images={images.map(file => URL.createObjectURL(file))} // Create preview URLs
+              onImagesChange={(imageUrls) => {
+                // This won't be used for creation, but needed for component
+              }}
+              onUpload={handleImageUpload}
+              onDelete={handleImageDelete}
+              maxImages={10}
+            />
+          </div>
+        );
 
       default:
         return null;

@@ -11,10 +11,13 @@ import {
   MapPinIcon,
   ClockIcon,
   CurrencyDollarIcon,
-  TrophyIcon
+  TrophyIcon,
+  PhotoIcon,
+  XMarkIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import ImageUpload from "../components/ImageUpload";
 
 export default function Venues() {
   const { user } = useAuth();
@@ -26,6 +29,8 @@ export default function Venues() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [venueTypeFilter, setVenueTypeFilter] = useState("ALL");
   const [courtTypeFilter, setCourtTypeFilter] = useState("ALL");
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedVenue, setSelectedVenue] = useState(null);
 
   useEffect(() => {
     fetchVenues();
@@ -184,6 +189,45 @@ export default function Venues() {
     }
   };
 
+  const handleImageUpload = async (files) => {
+    if (!selectedVenue) return;
+    try {
+      await api.uploadVenueImages(selectedVenue.venueId, files);
+      // Refresh venue data
+      await fetchVenues();
+      // Update selected venue
+      const updatedVenue = venues.find(v => v.venueId === selectedVenue.venueId);
+      if (updatedVenue) {
+        setSelectedVenue(updatedVenue);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images. Please try again.');
+    }
+  };
+
+  const handleImageDelete = async (imageUrl) => {
+    if (!selectedVenue) return;
+    try {
+      await api.deleteVenueImage(selectedVenue.venueId, imageUrl);
+      // Refresh venue data
+      await fetchVenues();
+      // Update selected venue
+      const updatedVenue = venues.find(v => v.venueId === selectedVenue.venueId);
+      if (updatedVenue) {
+        setSelectedVenue(updatedVenue);
+      }
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Failed to delete image. Please try again.');
+    }
+  };
+
+  const openImageModal = (venue) => {
+    setSelectedVenue(venue);
+    setShowImageModal(true);
+  };
+
   const handleDeleteCourt = async (courtId) => {
     if (window.confirm("Are you sure you want to delete this court? This action cannot be undone.")) {
       try {
@@ -298,9 +342,16 @@ export default function Venues() {
                   <PlusIcon className="h-4 w-4 inline mr-2" />
                   Add Court
                 </Link>
+                <button
+                  onClick={() => openImageModal(venues[0])}
+                  className="block w-full text-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700"
+                >
+                  <PhotoIcon className="h-4 w-4 inline mr-2" />
+                  Manage Images
+                </button>
                 <Link
                   to={`/edit-venue/${venues[0].venueId}`}
-                  className="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-green-700"
+                  className="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
                 >
                   <PencilIcon className="h-4 w-4 inline mr-2" />
                   Edit Venue
@@ -423,6 +474,44 @@ export default function Venues() {
           )}
         </div>
       </div>
+
+      {/* Image Management Modal */}
+      {showImageModal && selectedVenue && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Manage Images - {selectedVenue.name}
+                </h3>
+                <button
+                  onClick={() => setShowImageModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <ImageUpload
+                images={selectedVenue.images || []}
+                onImagesChange={(images) => setSelectedVenue({...selectedVenue, images})}
+                onUpload={handleImageUpload}
+                onDelete={handleImageDelete}
+                maxImages={10}
+              />
+              
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowImageModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

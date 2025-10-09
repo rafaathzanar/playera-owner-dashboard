@@ -350,6 +350,67 @@ class ApiService {
     );
   }
 
+  // Image Upload APIs
+  async uploadVenueImages(venueId, files) {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    const token = this.getAuthToken();
+    const response = await fetch(`${this.baseURL}/images/venue/${venueId}`, {
+      method: "POST",
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  async uploadCourtImages(courtId, files) {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    const token = this.getAuthToken();
+    const response = await fetch(`${this.baseURL}/images/court/${courtId}`, {
+      method: "POST",
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  async deleteVenueImage(venueId, imageUrl) {
+    return await this.request(
+      `/images/venue/${venueId}?imageUrl=${encodeURIComponent(imageUrl)}`,
+      "DELETE"
+    );
+  }
+
+  async deleteCourtImage(courtId, imageUrl) {
+    return await this.request(
+      `/images/court/${courtId}?imageUrl=${encodeURIComponent(imageUrl)}`,
+      "DELETE"
+    );
+  }
+
   // Logout
   async logout() {
     this.removeAuthToken();

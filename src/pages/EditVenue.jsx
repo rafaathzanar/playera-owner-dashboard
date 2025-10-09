@@ -9,10 +9,12 @@ import {
   EnvelopeIcon,
   GlobeAltIcon,
   CurrencyDollarIcon,
-  ClockIcon
+  ClockIcon,
+  PhotoIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import ImageUpload from "../components/ImageUpload";
 
 export default function EditVenue() {
   const navigate = useNavigate();
@@ -42,6 +44,9 @@ export default function EditVenue() {
   const [businessHours, setBusinessHours] = useState({
     openingHours: '6:00 AM - 11:00 PM'
   });
+
+  // Images
+  const [images, setImages] = useState([]);
 
   useEffect(() => {
     console.log('=== DEBUG: EditVenue Component ===');
@@ -78,6 +83,9 @@ export default function EditVenue() {
         openingHours: venueData.openingHours || '6:00 AM - 11:00 PM'
       });
 
+      // Set images
+      setImages(venueData.images || []);
+
     } catch (error) {
       console.error("Error fetching venue data:", error);
       alert("Failed to fetch venue data. Please try again.");
@@ -92,6 +100,28 @@ export default function EditVenue() {
 
   const handleBusinessHoursChange = (field, value) => {
     setBusinessHours(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = async (files) => {
+    try {
+      await api.uploadVenueImages(venueId, files);
+      // Refresh venue data to get updated images
+      await fetchVenueData();
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images. Please try again.');
+    }
+  };
+
+  const handleImageDelete = async (imageUrl) => {
+    try {
+      await api.deleteVenueImage(venueId, imageUrl);
+      // Refresh venue data to get updated images
+      await fetchVenueData();
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Failed to delete image. Please try again.');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -142,7 +172,8 @@ export default function EditVenue() {
 
   const tabs = [
     { id: 'basic', name: 'Basic Information', icon: BuildingOfficeIcon },
-    { id: 'hours', name: 'Business Hours', icon: ClockIcon }
+    { id: 'hours', name: 'Business Hours', icon: ClockIcon },
+    { id: 'images', name: 'Images', icon: PhotoIcon }
   ];
 
   const renderTabContent = () => {
@@ -312,6 +343,29 @@ export default function EditVenue() {
                 This will be displayed to customers in the mobile app
               </p>
             </div>
+          </div>
+        );
+
+      case 'images':
+        return (
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <PhotoIcon className="h-5 w-5 text-blue-600 mr-2" />
+                <h3 className="text-sm font-medium text-blue-900">Venue Images</h3>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                Upload images of your venue to showcase it to customers. These will be displayed in the mobile app.
+              </p>
+            </div>
+
+            <ImageUpload
+              images={images}
+              onImagesChange={(imageUrls) => setImages(imageUrls)}
+              onUpload={handleImageUpload}
+              onDelete={handleImageDelete}
+              maxImages={10}
+            />
           </div>
         );
 

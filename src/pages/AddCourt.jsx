@@ -10,10 +10,12 @@ import {
   UserGroupIcon,
   SunIcon,
   CloudIcon,
-  LightBulbIcon
+  LightBulbIcon,
+  PhotoIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import ImageUpload from "../components/ImageUpload";
 
 export default function AddCourt() {
   const navigate = useNavigate();
@@ -73,6 +75,9 @@ export default function AddCourt() {
     maintenanceEndTime: '06:00'
   });
 
+  // Images
+  const [images, setImages] = useState([]);
+
   useEffect(() => {
     // If no venueId in params, try to get it from the current user's venue
     if (!venueId && user?.userId) {
@@ -114,6 +119,21 @@ export default function AddCourt() {
 
   const handleMaintenanceChange = (field, value) => {
     setMaintenance(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = async (files) => {
+    try {
+      // For court creation, we'll store the files and upload them after court is created
+      setImages(prev => [...prev, ...files]);
+    } catch (error) {
+      console.error('Error preparing images:', error);
+      alert('Failed to prepare images. Please try again.');
+    }
+  };
+
+  const handleImageDelete = async (imageUrl) => {
+    // For court creation, remove from local state
+    setImages(prev => prev.filter(img => img !== imageUrl));
   };
 
   const handleSubmit = async (e) => {
@@ -193,8 +213,19 @@ export default function AddCourt() {
       console.log("Creating court:", courtData);
       
       // Make API call to create court
-      await api.createCourt(courtData);
-      console.log("Court created successfully");
+      const response = await api.createCourt(courtData);
+      console.log("Court created successfully:", response);
+      
+      // If we have images to upload, upload them after court creation
+      if (images.length > 0 && response.courtId) {
+        try {
+          await api.uploadCourtImages(response.courtId, images);
+          console.log("Images uploaded successfully");
+        } catch (imageError) {
+          console.error("Error uploading images:", imageError);
+          alert("Court created but failed to upload images. You can upload them later.");
+        }
+      }
       
       alert("Court created successfully!");
       navigate("/venues");
@@ -211,7 +242,8 @@ export default function AddCourt() {
     { id: 'pricing', name: 'Pricing & Duration', icon: CurrencyDollarIcon },
     { id: 'hours', name: 'Operating Hours', icon: ClockIcon },
     { id: 'pricing-dynamic', name: 'Dynamic Pricing', icon: CogIcon },
-    { id: 'maintenance', name: 'Maintenance', icon: CogIcon }
+    { id: 'maintenance', name: 'Maintenance', icon: CogIcon },
+    { id: 'images', name: 'Images', icon: PhotoIcon }
   ];
 
   const renderTabContent = () => {
@@ -663,6 +695,31 @@ export default function AddCourt() {
                 </div>
               </div>
             )}
+          </div>
+        );
+
+      case 'images':
+        return (
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <PhotoIcon className="h-5 w-5 text-blue-600 mr-2" />
+                <h3 className="text-sm font-medium text-blue-900">Court Images</h3>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                Upload images of your court to showcase it to customers. These will be displayed in the mobile app.
+              </p>
+            </div>
+
+            <ImageUpload
+              images={images.map(file => URL.createObjectURL(file))} // Create preview URLs
+              onImagesChange={(imageUrls) => {
+                // This won't be used for creation, but needed for component
+              }}
+              onUpload={handleImageUpload}
+              onDelete={handleImageDelete}
+              maxImages={10}
+            />
           </div>
         );
 
