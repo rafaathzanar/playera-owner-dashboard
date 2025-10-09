@@ -117,6 +117,18 @@ export default function Login() {
             <p className="text-sm text-gray-600">
               Demo credentials: testowner@playera.com / password123
             </p>
+            <div className="mt-4">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/signup')}
+                  className="font-medium text-orange-600 hover:text-orange-500"
+                >
+                  Create venue owner account
+                </button>
+              </p>
+            </div>
           </div>
         </form>
       </div>

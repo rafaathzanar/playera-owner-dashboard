@@ -41,24 +41,30 @@ export default function Dashboard() {
     try {
       if (!user?.userId) {
         console.error('User not authenticated');
+        setVenue(null);
         return;
       }
 
       // Fetch venue data from backend
       try {
         const venueData = await api.getVenueByOwner(user.userId);
-        setVenue(venueData);
-      } catch (error) {
-        if (error.message.includes('Venue not found for owner')) {
-          // This is expected for new venue owners
+        console.log('Venue data received:', venueData);
+        
+        // Check if venue actually exists (has a valid venueId)
+        if (venueData && venueData.venueId) {
+          setVenue(venueData);
+        } else {
           console.log('No venue found - new venue owner');
           setVenue(null);
-        } else {
-          console.error("Error fetching venue data:", error);
         }
+      } catch (error) {
+        console.log('Error fetching venue data:', error.message);
+        // For any error (including "Venue not found"), treat as no venue
+        setVenue(null);
       }
     } catch (error) {
-      console.error("Error fetching venue data:", error);
+      console.error("Error in fetchVenueData:", error);
+      setVenue(null);
     }
   };
 
@@ -147,13 +153,21 @@ export default function Dashboard() {
     );
   }
 
+  // Debug logging
+  console.log('Dashboard render - venue:', venue, 'user:', user);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your venues today.</p>
+          <p className="text-gray-600 mt-2">
+            {venue 
+              ? "Welcome back! Here's what's happening with your venues today."
+              : "Welcome to PlayEra! Let's get your venue set up and ready for business."
+            }
+          </p>
         </div>
 
         {/* Venue Info or Welcome Screen */}
@@ -180,10 +194,11 @@ export default function Dashboard() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
                 <BuildingOfficeIcon className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Welcome to Your Venue Dashboard!</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Welcome to PlayEra, {user?.name || 'New Venue Owner'}!</h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                You're just a few steps away from managing your sports venue. Create your venue to start accepting bookings, 
-                managing courts, and tracking your business performance. The setup process is quick and easy!
+                Congratulations on joining PlayEra! You're just a few steps away from managing your sports venue. 
+                Create your venue to start accepting bookings, managing courts, and tracking your business performance. 
+                The setup process is quick and easy!
               </p>
               
               {/* Setup Steps */}
@@ -455,10 +470,9 @@ export default function Dashboard() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
                 <ChartBarIcon className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Welcome to Your Venue Dashboard!</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Get Started?</h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                You're just a few steps away from managing your sports venue. Create your venue to start accepting bookings, 
-                managing courts, and tracking your business performance. The setup process is quick and easy!
+                Your venue dashboard is ready! Follow the steps below to set up your sports venue and start accepting bookings from customers.
               </p>
               
               {/* Setup Steps */}
