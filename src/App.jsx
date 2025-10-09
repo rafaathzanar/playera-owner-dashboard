@@ -18,6 +18,7 @@ import TimeSlotManagement from "./pages/TimeSlotManagement";
 import DynamicPricing from "./pages/DynamicPricing";
 import BookingManagement from "./pages/BookingManagement";
 import Analytics from "./pages/Analytics";
+import Profile from "./pages/Profile";
 
 
 export default function App() {
@@ -128,6 +129,14 @@ export default function App() {
               <>
                 <Navbar />
                 <Analytics />
+              </>
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <>
+                <Navbar />
+                <Profile />
               </>
             </ProtectedRoute>
           } />

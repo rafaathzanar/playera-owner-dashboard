@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import api from "../services/api";
-import { 
-  HomeIcon, 
-  BuildingOfficeIcon, 
-  CalendarIcon, 
+import {
+  HomeIcon,
+  BuildingOfficeIcon,
+  CalendarIcon,
   CurrencyDollarIcon,
   ChartBarIcon,
   Bars3Icon,
   XMarkIcon,
   ClockIcon,
-  WrenchScrewdriverIcon
+  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -29,7 +29,7 @@ export default function NavBar() {
           const venueData = await api.getVenueByOwner(user.userId);
           setVenue(venueData);
         } catch (error) {
-          console.log('No venue found yet');
+          console.log("No venue found yet");
         }
       }
     };
@@ -39,9 +39,21 @@ export default function NavBar() {
   const navigation = [
     { name: "Dashboard", href: "/", icon: HomeIcon },
     { name: "Venues", href: "/venues", icon: BuildingOfficeIcon },
-    { name: "Slots", href: venue ? `/venues/${venue.venueId}/timeslots` : "/venues", icon: ClockIcon },
-    { name: "Pricing", href: venue ? `/venues/${venue.venueId}/pricing` : "/venues", icon: CurrencyDollarIcon },
-    { name: "Equipment", href: venue ? `/venues/${venue.venueId}/equipment` : "/venues", icon: WrenchScrewdriverIcon },
+    {
+      name: "Slots",
+      href: venue ? `/venues/${venue.venueId}/timeslots` : "/venues",
+      icon: ClockIcon,
+    },
+    {
+      name: "Pricing",
+      href: venue ? `/venues/${venue.venueId}/pricing` : "/venues",
+      icon: CurrencyDollarIcon,
+    },
+    {
+      name: "Equipment",
+      href: venue ? `/venues/${venue.venueId}/equipment` : "/venues",
+      icon: WrenchScrewdriverIcon,
+    },
     { name: "Bookings", href: "/bookings", icon: CalendarIcon },
     { name: "Analytics", href: "/analytics", icon: ChartBarIcon },
   ];
@@ -50,7 +62,7 @@ export default function NavBar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -58,13 +70,15 @@ export default function NavBar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and Brand */}
-          <div className="flex items-center mr-4" >
+          <div className="flex items-center mr-4">
             <div className="flex-shrink-0">
               <Link to="/" className="flex items-center">
                 <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-lg">P</span>
                 </div>
-                <span className="ml-2 text-xl font-bold text-gray-900">Playera</span>
+                <span className="ml-2 text-xl font-bold text-gray-900">
+                  Playera
+                </span>
               </Link>
             </div>
           </div>
@@ -88,16 +102,21 @@ export default function NavBar() {
           </div>
 
           {/* User Profile */}
-          <div className="hidden ml-8 md:flex md:items-center">
+          <div className="hidden ml-12 md:flex ">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-gray-600 font-medium text-sm">
-                  {user?.name?.charAt(0) || 'V'}
+              <Link
+                to="/profile"
+                className="flex items-center space-x-2 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+              >
+                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                  <span className="text-gray-600 font-medium text-sm">
+                    {user?.name?.charAt(0) || "V"}
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  {user?.name || "Venue Owner"}
                 </span>
-              </div>
-              <span className="text-sm font-medium text-gray-700">
-                {user?.name || 'Venue Owner'}
-              </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
@@ -142,18 +161,22 @@ export default function NavBar() {
                 {item.name}
               </Link>
             ))}
-            <div className="pt-4 mr-8  ml-8 border-t border-gray-200">
+            <div className="pt-4 mr-8 ml-8 border-t border-gray-200">
               <div className="flex items-center justify-between px-3 py-2">
-                <div className="flex items-center">
+                <Link
+                  to="/profile"
+                  className="flex items-center hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
                   <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
                     <span className="text-gray-600 font-medium text-sm">
-                      {user?.name?.charAt(0) || 'V'}
+                      {user?.name?.charAt(0) || "V"}
                     </span>
                   </div>
                   <span className="text-sm font-medium text-gray-700">
-                    {user?.name || 'Venue Owner'}
+                    {user?.name || "Venue Owner"}
                   </span>
-                </div>
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="text-sm text-red-600 hover:text-red-700 px-3 py-1 rounded hover:bg-red-50"

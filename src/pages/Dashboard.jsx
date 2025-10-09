@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { 
-  BuildingOfficeIcon, 
-  CalendarIcon, 
+import {
+  BuildingOfficeIcon,
+  CalendarIcon,
   CurrencyDollarIcon,
   ChartBarIcon,
   PlusIcon,
   ClockIcon,
   UsersIcon,
-  StarIcon
+  StarIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
@@ -21,26 +21,17 @@ export default function Dashboard() {
     totalBookings: 0,
     totalRevenue: 0,
     pendingBookings: 0,
-    activeBookings: 0
+    activeBookings: 0,
   });
 
   const [recentBookings, setRecentBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsData, setAnalyticsData] = useState(null);
 
-  useEffect(() => {
-    // Fetch venue and dashboard data from API
-    fetchDashboardData();
-  }, []);
-
-  useEffect(() => {
-    // Fetch venue data when component mounts
-    fetchVenueData();
-  }, []);
-
-  const fetchVenueData = async () => {
+  const fetchVenueData = useCallback(async () => {
     try {
       if (!user?.userId) {
-        console.error('User not authenticated');
+        console.error("User not authenticated");
         setVenue(null);
         return;
       }
@@ -48,17 +39,17 @@ export default function Dashboard() {
       // Fetch venue data from backend
       try {
         const venueData = await api.getVenueByOwner(user.userId);
-        console.log('Venue data received:', venueData);
-        
+        console.log("Venue data received:", venueData);
+
         // Check if venue actually exists (has a valid venueId)
         if (venueData && venueData.venueId) {
           setVenue(venueData);
         } else {
-          console.log('No venue found - new venue owner');
+          console.log("No venue found - new venue owner");
           setVenue(null);
         }
       } catch (error) {
-        console.log('Error fetching venue data:', error.message);
+        console.log("Error fetching venue data:", error.message);
         // For any error (including "Venue not found"), treat as no venue
         setVenue(null);
       }
@@ -66,28 +57,63 @@ export default function Dashboard() {
       console.error("Error in fetchVenueData:", error);
       setVenue(null);
     }
-  };
+  }, [user?.userId]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       if (!user?.userId) {
-        console.error('User not authenticated');
+        console.error("User not authenticated");
         return;
       }
 
       // Only fetch dashboard data if venue exists
       if (venue) {
-        // TODO: Replace with real API calls to get venue-specific analytics
-        setStats({
-          totalCourts: venue?.courts?.length || 0,
-          totalBookings: 0, // Will be fetched from real API
-          totalRevenue: 0,   // Will be fetched from real API
-          pendingBookings: 0, // Will be fetched from real API
-          activeBookings: 0   // Will be fetched from real API
-        });
+        try {
+          // Fetch real analytics data
+          const analyticsData = await api.getVenueAnalytics(
+            venue.venueId,
+            "month"
+          );
+          setAnalyticsData(analyticsData);
 
-        // TODO: Replace with real API call for recent bookings
-        setRecentBookings([]);
+          // Fetch recent bookings
+          const bookingsData = await api.getVenueBookings(venue.venueId);
+
+          // Update stats with real data
+          setStats({
+            totalCourts: venue?.courts?.length || 0,
+            totalBookings: analyticsData?.totalBookings || 0,
+            totalRevenue: analyticsData?.totalRevenue || 0,
+            pendingBookings: analyticsData?.pendingBookings || 0,
+            activeBookings: analyticsData?.confirmedBookings || 0,
+          });
+
+          // Set recent bookings (limit to 5 most recent)
+          const recentBookingsList =
+            bookingsData?.slice(0, 5).map((booking) => ({
+              id: booking.bookingId,
+              customerName: booking.customerName || "Customer",
+              venueName: venue.name,
+              courtName: booking.courtName || "Court",
+              date: new Date(booking.bookingDate).toLocaleDateString(),
+              time: booking.startTime,
+              status: booking.bookingStatus,
+              amount: booking.totalAmount || 0,
+            })) || [];
+
+          setRecentBookings(recentBookingsList);
+        } catch (error) {
+          console.error("Error fetching analytics data:", error);
+          // Fallback to basic stats if analytics fail
+          setStats({
+            totalCourts: venue?.courts?.length || 0,
+            totalBookings: 0,
+            totalRevenue: 0,
+            pendingBookings: 0,
+            activeBookings: 0,
+          });
+          setRecentBookings([]);
+        }
       } else {
         // For new venue owners, show setup-focused stats
         setStats({
@@ -95,24 +121,38 @@ export default function Dashboard() {
           totalBookings: 0,
           totalRevenue: 0,
           pendingBookings: 0,
-          activeBookings: 0
+          activeBookings: 0,
         });
         setRecentBookings([]);
       }
-          } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setStats({
-          totalCourts: 0,
-          totalBookings: 0,
-          totalRevenue: 0,
-          pendingBookings: 0,
-          activeBookings: 0
-        });
-        setRecentBookings([]);
-      } finally {
-        setLoading(false);
-      }
-  };
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      setStats({
+        totalCourts: 0,
+        totalBookings: 0,
+        totalRevenue: 0,
+        pendingBookings: 0,
+        activeBookings: 0,
+      });
+      setRecentBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.userId, venue]);
+
+  useEffect(() => {
+    // Fetch venue and dashboard data from API
+    fetchVenueData();
+  }, [fetchVenueData]);
+
+  useEffect(() => {
+    // Fetch dashboard data when venue changes
+    if (venue) {
+      fetchDashboardData();
+    } else {
+      setLoading(false);
+    }
+  }, [venue, fetchDashboardData]);
 
   const StatCard = ({ title, value, icon: Icon, color, change }) => (
     <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
@@ -124,8 +164,13 @@ export default function Dashboard() {
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-semibold text-gray-900">{value}</p>
           {change !== null && change !== undefined && (
-            <p className={`text-sm ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {change > 0 ? '+' : ''}{change}% from last month
+            <p
+              className={`text-sm ${
+                change > 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {change > 0 ? "+" : ""}
+              {change}% from last month
             </p>
           )}
         </div>
@@ -154,7 +199,7 @@ export default function Dashboard() {
   }
 
   // Debug logging
-  console.log('Dashboard render - venue:', venue, 'user:', user);
+  console.log("Dashboard render - venue:", venue, "user:", user);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -163,10 +208,9 @@ export default function Dashboard() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-2">
-            {venue 
+            {venue
               ? "Welcome back! Here's what's happening with your venues today."
-              : "Welcome to PlayEra! Let's get your venue set up and ready for business."
-            }
+              : "Welcome to PlayEra! Let's get your venue set up and ready for business."}
           </p>
         </div>
 
@@ -175,14 +219,22 @@ export default function Dashboard() {
           <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{venue.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {venue.name}
+                </h2>
                 <p className="text-gray-600 mt-1">{venue.description}</p>
-                <p className="text-gray-500 mt-1">{venue.address}, {venue.location}</p>
+                <p className="text-gray-500 mt-1">
+                  {venue.address}, {venue.location}
+                </p>
               </div>
               <div className="text-right">
-                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                  venue.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
+                <span
+                  className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                    venue.status === "ACTIVE"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
                   {venue.status}
                 </span>
               </div>
@@ -194,32 +246,51 @@ export default function Dashboard() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
                 <BuildingOfficeIcon className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Welcome to PlayEra, {user?.name || 'New Venue Owner'}!</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Welcome to PlayEra, {user?.name || "New Venue Owner"}!
+              </h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                Congratulations on joining PlayEra! You're just a few steps away from managing your sports venue. 
-                Create your venue to start accepting bookings, managing courts, and tracking your business performance. 
-                The setup process is quick and easy!
+                Congratulations on joining PlayEra! You're just a few steps away
+                from managing your sports venue. Create your venue to start
+                accepting bookings, managing courts, and tracking your business
+                performance. The setup process is quick and easy!
               </p>
-              
+
               {/* Setup Steps */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 max-w-4xl mx-auto">
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">1</div>
-                  <h4 className="font-medium text-gray-900 mb-1">Create Venue</h4>
-                  <p className="text-sm text-gray-600">Set up your venue details and location</p>
+                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">
+                    1
+                  </div>
+                  <h4 className="font-medium text-gray-900 mb-1">
+                    Create Venue
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Set up your venue details and location
+                  </p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">2</div>
+                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">
+                    2
+                  </div>
                   <h4 className="font-medium text-gray-900 mb-1">Add Courts</h4>
-                  <p className="text-sm text-gray-600">Create different types of sports courts</p>
+                  <p className="text-sm text-gray-600">
+                    Create different types of sports courts
+                  </p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">3</div>
-                  <h4 className="font-medium text-gray-900 mb-1">Start Accepting</h4>
-                  <p className="text-sm text-gray-600">Begin taking bookings from customers</p>
+                  <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">
+                    3
+                  </div>
+                  <h4 className="font-medium text-gray-900 mb-1">
+                    Start Accepting
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Begin taking bookings from customers
+                  </p>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/add-venue"
@@ -247,28 +318,32 @@ export default function Dashboard() {
               value={stats.totalCourts}
               icon={UsersIcon}
               color="bg-green-500"
-              change={12}
+              change={null}
             />
             <StatCard
               title="Total Bookings"
               value={stats.totalBookings}
               icon={ChartBarIcon}
               color="bg-purple-500"
-              change={8}
+              change={null}
             />
             <StatCard
               title="Total Revenue"
               value={`LKR ${stats.totalRevenue.toLocaleString()}`}
               icon={CurrencyDollarIcon}
               color="bg-orange-500"
-              change={15}
+              change={
+                analyticsData?.revenueChange
+                  ? Math.round(analyticsData.revenueChange)
+                  : null
+              }
             />
             <StatCard
               title="Pending Bookings"
               value={stats.pendingBookings}
               icon={ClockIcon}
               color="bg-blue-500"
-              change={5}
+              change={null}
             />
           </div>
         ) : (
@@ -307,12 +382,16 @@ export default function Dashboard() {
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            {venue ? 'Quick Actions' : 'Get Started'}
+            {venue ? "Quick Actions" : "Get Started"}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <QuickActionCard
               title={venue ? "Manage Venue" : "Create Venue"}
-              description={venue ? "Edit venue details, amenities, and business settings" : "Set up your sports venue with courts and facilities"}
+              description={
+                venue
+                  ? "Edit venue details, amenities, and business settings"
+                  : "Set up your sports venue with courts and facilities"
+              }
               icon={BuildingOfficeIcon}
               href={venue ? `/edit-venue/${venue.venueId}` : "/add-venue"}
               color="bg-blue-500"
@@ -346,13 +425,6 @@ export default function Dashboard() {
                   icon={ChartBarIcon}
                   href="/analytics"
                   color="bg-indigo-500"
-                />
-                <QuickActionCard
-                  title="Settings"
-                  description="Configure business rules, notifications, and preferences"
-                  icon={StarIcon}
-                  href="/venues"
-                  color="bg-orange-500"
                 />
               </>
             )}
@@ -390,24 +462,37 @@ export default function Dashboard() {
             {/* Recent Bookings */}
             <div className="bg-white rounded-lg shadow border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Bookings</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Recent Bookings
+                </h3>
               </div>
               <div className="p-6">
                 {recentBookings.length > 0 ? (
                   <div className="space-y-4">
                     {recentBookings.map((booking) => (
-                      <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div
+                        key={booking.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900">{booking.customerName}</p>
-                          <p className="text-sm text-gray-600">{booking.venueName} - {booking.courtName}</p>
-                          <p className="text-sm text-gray-500">{booking.date} • {booking.time}</p>
+                          <p className="font-medium text-gray-900">
+                            {booking.customerName}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {booking.venueName} - {booking.courtName}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {booking.date} • {booking.time}
+                          </p>
                         </div>
                         <div className="text-right">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            booking.status === 'CONFIRMED' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              booking.status === "CONFIRMED"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
                             {booking.status}
                           </span>
                           <p className="text-sm font-medium text-gray-900 mt-1">
@@ -418,10 +503,15 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">No recent bookings</p>
+                  <p className="text-gray-500 text-center py-8">
+                    No recent bookings
+                  </p>
                 )}
                 <div className="mt-4">
-                  <Link to="/bookings" className="text-orange-600 hover:text-orange-700 text-sm font-medium">
+                  <Link
+                    to="/bookings"
+                    className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+                  >
                     View all bookings →
                   </Link>
                 </div>
@@ -431,7 +521,9 @@ export default function Dashboard() {
             {/* Pending Actions */}
             <div className="bg-white rounded-lg shadow border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Pending Actions</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Pending Actions
+                </h3>
               </div>
               <div className="p-6">
                 <div className="space-y-4">
@@ -439,24 +531,38 @@ export default function Dashboard() {
                     <div className="flex items-center">
                       <ClockIcon className="h-5 w-5 text-yellow-600 mr-3" />
                       <div>
-                        <p className="font-medium text-gray-900">Pending Bookings</p>
-                        <p className="text-sm text-gray-600">{stats.pendingBookings} require approval</p>
+                        <p className="font-medium text-gray-900">
+                          Pending Bookings
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {stats.pendingBookings} require approval
+                        </p>
                       </div>
                     </div>
-                    <Link to="/bookings" className="text-yellow-700 hover:text-yellow-800 text-sm font-medium">
+                    <Link
+                      to="/bookings"
+                      className="text-yellow-700 hover:text-yellow-800 text-sm font-medium"
+                    >
                       Review →
                     </Link>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center">
                       <UsersIcon className="h-5 w-5 text-blue-600 mr-3" />
                       <div>
-                        <p className="font-medium text-gray-900">Active Bookings</p>
-                        <p className="text-sm text-gray-600">{stats.activeBookings} ongoing today</p>
+                        <p className="font-medium text-gray-900">
+                          Active Bookings
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {stats.activeBookings} ongoing today
+                        </p>
                       </div>
                     </div>
-                    <Link to="/bookings" className="text-blue-700 hover:text-blue-800 text-sm font-medium">
+                    <Link
+                      to="/bookings"
+                      className="text-blue-700 hover:text-blue-800 text-sm font-medium"
+                    >
                       View →
                     </Link>
                   </div>
@@ -470,27 +576,46 @@ export default function Dashboard() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
                 <ChartBarIcon className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Get Started?</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Ready to Get Started?
+              </h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                Your venue dashboard is ready! Follow the steps below to set up your sports venue and start accepting bookings from customers.
+                Your venue dashboard is ready! Follow the steps below to set up
+                your sports venue and start accepting bookings from customers.
               </p>
-              
+
               {/* Setup Steps */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 max-w-4xl mx-auto">
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">1</div>
-                  <h4 className="font-medium text-gray-900 mb-1">Create Venue</h4>
-                  <p className="text-sm text-gray-600">Set up your venue details and location</p>
+                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">
+                    1
+                  </div>
+                  <h4 className="font-medium text-gray-900 mb-1">
+                    Create Venue
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Set up your venue details and location
+                  </p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">2</div>
+                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">
+                    2
+                  </div>
                   <h4 className="font-medium text-gray-900 mb-1">Add Courts</h4>
-                  <p className="text-sm text-gray-600">Create different types of sports courts</p>
+                  <p className="text-sm text-gray-600">
+                    Create different types of sports courts
+                  </p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">3</div>
-                  <h4 className="font-medium text-gray-900 mb-1">Start Accepting</h4>
-                  <p className="text-sm text-gray-600">Begin taking bookings from customers</p>
+                  <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">
+                    3
+                  </div>
+                  <h4 className="font-medium text-gray-900 mb-1">
+                    Start Accepting
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Begin taking bookings from customers
+                  </p>
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

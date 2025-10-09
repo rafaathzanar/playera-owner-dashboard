@@ -156,6 +156,28 @@ class ApiService {
     );
   }
 
+  // Booking APIs
+  async getVenueBookings(venueId) {
+    return await this.request(`/bookings/venue/${venueId}`);
+  }
+
+  // User Profile APIs
+  async getCurrentUserProfile() {
+    return await this.request("/users/profile");
+  }
+
+  async updateUserProfile(profileData) {
+    return await this.request("/users/profile", "PUT", profileData);
+  }
+
+  async changePassword(passwordData) {
+    return await this.request("/users/change-password", "POST", passwordData);
+  }
+
+  async deleteAccount() {
+    return await this.request("/users/profile", "DELETE");
+  }
+
   // Court Management APIs
   async getCourts(venueId) {
     return await this.request(`/courts/venue/${venueId}`);
@@ -218,12 +240,6 @@ class ApiService {
   async getDashboardSummary(ownerId, startDate, endDate) {
     return await this.request(
       `/owner-dashboard/summary?ownerId=${ownerId}&start=${startDate}&end=${endDate}`
-    );
-  }
-
-  async getVenueAnalytics(venueId, dateRange = "month") {
-    return await this.request(
-      `/analytics/venue/${venueId}?dateRange=${dateRange}`
     );
   }
 
@@ -417,4 +433,5 @@ class ApiService {
   }
 }
 
-export default new ApiService();
+const apiService = new ApiService();
+export default apiService;
