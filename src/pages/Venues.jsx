@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { 
-  PlusIcon, 
+import {
+  PlusIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   EyeIcon,
@@ -13,11 +13,13 @@ import {
   CurrencyDollarIcon,
   TrophyIcon,
   PhotoIcon,
-  XMarkIcon
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import ImageUpload from "../components/ImageUpload";
+import ImageGallery from "../components/ImageGallery";
+import { AlertDialog, ConfirmDialog } from "../components/Dialog";
 
 export default function Venues() {
   const { user } = useAuth();
@@ -31,6 +33,10 @@ export default function Venues() {
   const [courtTypeFilter, setCourtTypeFilter] = useState("ALL");
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState(null);
+  
+  // Dialog states
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'warning' });
 
   useEffect(() => {
     fetchVenues();
@@ -39,9 +45,9 @@ export default function Venues() {
   const fetchVenues = async () => {
     try {
       setLoading(true);
-      
+
       if (!user?.userId) {
-        console.error('User not authenticated');
+        console.error("User not authenticated");
         setVenues([]);
         setCourts([]);
         return;
@@ -50,13 +56,16 @@ export default function Venues() {
       // Fetch single venue from backend (each owner has only one venue)
       try {
         const venueData = await api.getVenueByOwner(user.userId);
-        console.log('=== DEBUG: Venue Data Received ===');
-        console.log('Raw venueData:', venueData);
-        console.log('venueData.venueId:', venueData?.venueId);
-        console.log('venueData type:', typeof venueData);
-        console.log('venueData keys:', venueData ? Object.keys(venueData) : 'null');
-        console.log('===============================');
-        
+        console.log("=== DEBUG: Venue Data Received ===");
+        console.log("Raw venueData:", venueData);
+        console.log("venueData.venueId:", venueData?.venueId);
+        console.log("venueData type:", typeof venueData);
+        console.log(
+          "venueData keys:",
+          venueData ? Object.keys(venueData) : "null"
+        );
+        console.log("===============================");
+
         if (venueData && venueData.venueId) {
           // Transform the data to match our frontend structure
           const transformedVenue = {
@@ -64,8 +73,8 @@ export default function Venues() {
             name: venueData.name,
             location: venueData.location,
             address: venueData.address,
-            venueType: venueData.venueType || 'INDOOR',
-            status: venueData.status || 'ACTIVE',
+            venueType: venueData.venueType || "INDOOR",
+            status: venueData.status || "ACTIVE",
             maxCapacity: venueData.maxCapacity,
             basePrice: venueData.basePrice,
             totalCourts: venueData.courts?.length || 0,
@@ -73,23 +82,23 @@ export default function Venues() {
             lastBooking: null, // Will be fetched separately if needed
             images: venueData.images || [],
             description: venueData.description,
-            contactNo: venueData.contactNo
+            contactNo: venueData.contactNo,
           };
-          
-          console.log('=== DEBUG: Transformed Venue ===');
-          console.log('transformedVenue:', transformedVenue);
-          console.log('transformedVenue.venueId:', transformedVenue.venueId);
-          console.log('===============================');
-          
+
+          console.log("=== DEBUG: Transformed Venue ===");
+          console.log("transformedVenue:", transformedVenue);
+          console.log("transformedVenue.venueId:", transformedVenue.venueId);
+          console.log("===============================");
+
           setVenues([transformedVenue]);
-          
+
           // Set courts if they exist
           if (venueData.courts && Array.isArray(venueData.courts)) {
             // Map court data to ensure consistent field names
-            const mappedCourts = venueData.courts.map(court => ({
+            const mappedCourts = venueData.courts.map((court) => ({
               ...court,
               courtType: court.type || court.courtType, // Use type field as courtType
-              name: court.name || court.courtName // Use name field consistently
+              name: court.name || court.courtName, // Use name field consistently
             }));
             setCourts(mappedCourts);
           } else {
@@ -97,16 +106,16 @@ export default function Venues() {
           }
         } else {
           // No venue data
-          console.log('=== DEBUG: No Venue ID Found ===');
-          console.log('venueData exists:', !!venueData);
-          console.log('venueData.venueId:', venueData?.venueId);
-          console.log('===============================');
+          console.log("=== DEBUG: No Venue ID Found ===");
+          console.log("venueData exists:", !!venueData);
+          console.log("venueData.venueId:", venueData?.venueId);
+          console.log("===============================");
           setVenues([]);
           setCourts([]);
         }
       } catch (error) {
         // If no venue exists, show empty state
-        console.log('No venue found for owner, showing empty state');
+        console.log("No venue found for owner, showing empty state");
         setVenues([]);
         setCourts([]);
       }
@@ -121,66 +130,92 @@ export default function Venues() {
     }
   };
 
-  const filteredVenues = venues.filter(venue => {
+  const filteredVenues = venues.filter((venue) => {
     // Add null safety checks before calling toLowerCase()
-    const venueName = venue.name || '';
-    const venueLocation = venue.location || '';
-    
-    const matchesSearch = venueName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         venueLocation.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || venue.status === statusFilter;
-    const matchesType = venueTypeFilter === "ALL" || venue.venueType === venueTypeFilter;
-    
+    const venueName = venue.name || "";
+    const venueLocation = venue.location || "";
+
+    const matchesSearch =
+      venueName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      venueLocation.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "ALL" || venue.status === statusFilter;
+    const matchesType =
+      venueTypeFilter === "ALL" || venue.venueType === venueTypeFilter;
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const filteredCourts = courts.filter(court => {
-    const courtName = court.name || '';
-    const courtType = court.courtType || court.type || '';
-    
-    const matchesSearch = courtName.toLowerCase().includes(courtSearchTerm.toLowerCase()) ||
-                         courtType.toLowerCase().includes(courtSearchTerm.toLowerCase());
-    const matchesType = courtTypeFilter === "ALL" || (court.courtType || court.type) === courtTypeFilter;
-    
+  const filteredCourts = courts.filter((court) => {
+    const courtName = court.name || "";
+    const courtType = court.courtType || court.type || "";
+
+    const matchesSearch =
+      courtName.toLowerCase().includes(courtSearchTerm.toLowerCase()) ||
+      courtType.toLowerCase().includes(courtSearchTerm.toLowerCase());
+    const matchesType =
+      courtTypeFilter === "ALL" ||
+      (court.courtType || court.type) === courtTypeFilter;
+
     return matchesSearch && matchesType;
   });
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'ACTIVE': return 'bg-green-100 text-green-800';
-      case 'INACTIVE': return 'bg-gray-100 text-gray-800';
-      case 'MAINTENANCE': return 'bg-yellow-100 text-yellow-800';
-      case 'SUSPENDED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "ACTIVE":
+        return "bg-green-100 text-green-800";
+      case "INACTIVE":
+        return "bg-gray-100 text-gray-800";
+      case "MAINTENANCE":
+        return "bg-yellow-100 text-yellow-800";
+      case "SUSPENDED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getVenueTypeColor = (type) => {
     switch (type) {
-      case 'INDOOR': return 'bg-blue-100 text-blue-800';
-      case 'OUTDOOR': return 'bg-green-100 text-green-800';
-      case 'MIXED': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "INDOOR":
+        return "bg-blue-100 text-blue-800";
+      case "OUTDOOR":
+        return "bg-green-100 text-green-800";
+      case "MIXED":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getCourtTypeColor = (type) => {
     switch (type) {
-      case 'TENNIS': return 'bg-green-100 text-green-800';
-      case 'BADMINTON': return 'bg-blue-100 text-blue-800';
-      case 'SQUASH': return 'bg-purple-100 text-purple-800';
-      case 'BASKETBALL': return 'bg-orange-100 text-orange-800';
-      case 'FOOTBALL': return 'bg-red-100 text-red-800';
-      case 'CRICKET': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "TENNIS":
+        return "bg-green-100 text-green-800";
+      case "BADMINTON":
+        return "bg-blue-100 text-blue-800";
+      case "SQUASH":
+        return "bg-purple-100 text-purple-800";
+      case "BASKETBALL":
+        return "bg-orange-100 text-orange-800";
+      case "FOOTBALL":
+        return "bg-red-100 text-red-800";
+      case "CRICKET":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const handleDeleteVenue = async (venueId) => {
-    if (window.confirm("Are you sure you want to delete this venue? This action cannot be undone.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this venue? This action cannot be undone."
+      )
+    ) {
       try {
         // TODO: Replace with real API call
-        setVenues(venues.filter(v => v.venueId !== venueId));
+        setVenues(venues.filter((v) => v.venueId !== venueId));
         setCourts([]);
         console.log("Venue deleted:", venueId);
       } catch (error) {
@@ -196,14 +231,16 @@ export default function Venues() {
       // Refresh venue data
       await fetchVenues();
       // Update selected venue
-      const updatedVenue = venues.find(v => v.venueId === selectedVenue.venueId);
+      const updatedVenue = venues.find(
+        (v) => v.venueId === selectedVenue.venueId
+      );
       if (updatedVenue) {
         setSelectedVenue(updatedVenue);
       }
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      alert('Failed to upload images. Please try again.');
-    }
+      } catch (error) {
+        console.error("Error uploading images:", error);
+        showAlert("Upload Failed", "Failed to upload images. Please try again.", "error");
+      }
   };
 
   const handleImageDelete = async (imageUrl) => {
@@ -213,14 +250,16 @@ export default function Venues() {
       // Refresh venue data
       await fetchVenues();
       // Update selected venue
-      const updatedVenue = venues.find(v => v.venueId === selectedVenue.venueId);
+      const updatedVenue = venues.find(
+        (v) => v.venueId === selectedVenue.venueId
+      );
       if (updatedVenue) {
         setSelectedVenue(updatedVenue);
       }
-    } catch (error) {
-      console.error('Error deleting image:', error);
-      alert('Failed to delete image. Please try again.');
-    }
+      } catch (error) {
+        console.error("Error deleting image:", error);
+        showAlert("Delete Failed", "Failed to delete image. Please try again.", "error");
+      }
   };
 
   const openImageModal = (venue) => {
@@ -228,16 +267,32 @@ export default function Venues() {
     setShowImageModal(true);
   };
 
+  // Dialog helper functions
+  const showAlert = (title, message, type = 'info', autoClose = false, onConfirm = null) => {
+    setAlertDialog({ isOpen: true, title, message, type, autoClose, onConfirm });
+  };
+
+  const showConfirm = (title, message, onConfirm, type = 'warning') => {
+    setConfirmDialog({ isOpen: true, title, message, onConfirm, type });
+  };
+
   const handleDeleteCourt = async (courtId) => {
-    if (window.confirm("Are you sure you want to delete this court? This action cannot be undone.")) {
-      try {
-        // TODO: Replace with real API call
-        setCourts(courts.filter(c => c.courtId !== courtId));
-        console.log("Court deleted:", courtId);
-      } catch (error) {
-        console.error("Error deleting court:", error);
-      }
-    }
+    showConfirm(
+      "Delete Court",
+      "Are you sure you want to delete this court? This action cannot be undone.",
+      async () => {
+        try {
+          await api.deleteCourt(courtId);
+          // Refresh courts data after successful deletion
+          await fetchVenues();
+          showAlert("Success", "Court deleted successfully.", "success");
+        } catch (error) {
+          console.error("Error deleting court:", error);
+          showAlert("Delete Failed", "Failed to delete court. Please try again.", "error");
+        }
+      },
+      "danger"
+    );
   };
 
   if (loading) {
@@ -256,9 +311,12 @@ export default function Venues() {
           <div className="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-orange-100 mb-6">
             <BuildingOfficeIcon className="h-12 w-12 text-orange-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Playera!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            Welcome to Playera!
+          </h1>
           <p className="text-gray-600 mb-8 text-lg">
-            You're all set up as a venue owner! Now it's time to create your sports venue and start managing courts, equipment, and bookings.
+            You're all set up as a venue owner! Now it's time to create your
+            sports venue and start managing courts, equipment, and bookings.
           </p>
           <Link
             to="/add-venue"
@@ -279,7 +337,9 @@ export default function Venues() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">My Venue</h1>
-            <p className="text-gray-600 mt-2">Manage your sports venue, courts, and facilities</p>
+            <p className="text-gray-600 mt-2">
+              Manage your sports venue, courts, and facilities
+            </p>
           </div>
           <div className="mt-4 sm:mt-0 flex space-x-3">
             <Link
@@ -308,32 +368,94 @@ export default function Venues() {
 
         {/* Venue Info Card */}
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Venue Details</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Venue Images */}
+            {venues[0].images && venues[0].images.length > 0 && (
+              <div className="lg:col-span-1">
+                <ImageGallery
+                  images={venues[0].images}
+                  maxHeight="200px"
+                  showCounter={true}
+                />
+              </div>
+            )}
+
+            {/* Venue Details */}
+            <div
+              className={
+                venues[0].images && venues[0].images.length > 0
+                  ? "lg:col-span-1"
+                  : "lg:col-span-2"
+              }
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Venue Details
+              </h3>
               <div className="space-y-2">
-                <p className="text-sm text-gray-600"><span className="font-medium">Name:</span> {venues[0].name}</p>
-                <p className="text-sm text-gray-600"><span className="font-medium">Location:</span> {venues[0].location}</p>
-                <p className="text-sm text-gray-600"><span className="font-medium">Type:</span> {venues[0].venueType}</p>
-                <p className="text-sm text-gray-600"><span className="font-medium">Status:</span> 
-                  <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(venues[0].status)}`}>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Name:</span> {venues[0].name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Location:</span>{" "}
+                  {venues[0].location}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Type:</span>{" "}
+                  {venues[0].venueType}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Status:</span>
+                  <span
+                    className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                      venues[0].status
+                    )}`}
+                  >
                     {venues[0].status}
                   </span>
                 </p>
               </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Quick Stats</h3>
+
+            {/* Quick Stats */}
+            <div
+              className={
+                venues[0].images && venues[0].images.length > 0
+                  ? "lg:col-span-1"
+                  : "lg:col-span-1"
+              }
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Quick Stats
+              </h3>
               <div className="space-y-2">
-                <p className="text-sm text-gray-600"><span className="font-medium">Total Courts:</span> {courts.length}</p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Total Courts:</span>{" "}
+                  {courts.length}
+                </p>
                 {venues[0].basePrice && (
-                  <p className="text-sm text-gray-600"><span className="font-medium">Base Price:</span> LKR {venues[0].basePrice}/hour</p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Base Price:</span> LKR{" "}
+                    {venues[0].basePrice}/hour
+                  </p>
                 )}
-                <p className="text-sm text-gray-600"><span className="font-medium">Max Capacity:</span> {venues[0].maxCapacity}</p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Max Capacity:</span>{" "}
+                  {venues[0].maxCapacity}
+                </p>
               </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Actions</h3>
+
+            {/* Actions */}
+            <div
+              className={
+                venues[0].images && venues[0].images.length > 0
+                  ? "lg:col-span-1"
+                  : "lg:col-span-1"
+              }
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Actions
+              </h3>
               <div className="space-y-2">
                 <Link
                   to={`/add-court/${venues[0].venueId}`}
@@ -366,7 +488,9 @@ export default function Venues() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Courts</h2>
-              <p className="text-gray-600 mt-1">Manage your sports courts and facilities</p>
+              <p className="text-gray-600 mt-1">
+                Manage your sports courts and facilities
+              </p>
             </div>
             <Link
               to={`/add-court/${venues[0].venueId}`}
@@ -405,7 +529,8 @@ export default function Venues() {
               </select>
             </div>
             <div className="flex items-center justify-end text-sm text-gray-600">
-              {filteredCourts.length} court{filteredCourts.length !== 1 ? 's' : ''} found
+              {filteredCourts.length} court
+              {filteredCourts.length !== 1 ? "s" : ""} found
             </div>
           </div>
 
@@ -415,7 +540,9 @@ export default function Venues() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
                 <TrophyIcon className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Courts Yet</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Courts Yet
+              </h3>
               <p className="text-gray-600 mb-6">
                 Get started by adding your first sports court to your venue.
               </p>
@@ -430,25 +557,51 @@ export default function Venues() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCourts.map((court) => (
-                <div key={court.courtId} className="bg-gray-50 rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div
+                  key={court.courtId}
+                  className="bg-gray-50 rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                >
+                  {/* Court Images */}
+                  {court.images && court.images.length > 0 && (
+                    <div className="mb-4">
+                      <ImageGallery
+                        images={court.images}
+                        maxHeight="150px"
+                        showCounter={true}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">{court.name}</h3>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCourtTypeColor(court.courtType || court.type)}`}>
-                      {court.courtType || court.type || 'Unknown'}
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {court.name}
+                    </h3>
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getCourtTypeColor(
+                        court.courtType || court.type
+                      )}`}
+                    >
+                      {court.courtType || court.type || "Unknown"}
                     </span>
                   </div>
-                  
+
                   <div className="space-y-2 mb-4">
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Type:</span> {court.courtType || court.type || 'Unknown'}
+                      <span className="font-medium">Type:</span>{" "}
+                      {court.courtType || court.type || "Unknown"}
                     </p>
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Price:</span> LKR {court.pricePerHour || 0}/hour
+                      <span className="font-medium">Price:</span> LKR{" "}
+                      {court.pricePerHour || 0}/hour
                     </p>
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Status:</span> 
-                      <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(court.status || 'ACTIVE')}`}>
-                        {court.status || 'ACTIVE'}
+                      <span className="font-medium">Status:</span>
+                      <span
+                        className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                          court.status || "ACTIVE"
+                        )}`}
+                      >
+                        {court.status || "ACTIVE"}
                       </span>
                     </p>
                   </div>
@@ -491,15 +644,17 @@ export default function Venues() {
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              
+
               <ImageUpload
                 images={selectedVenue.images || []}
-                onImagesChange={(images) => setSelectedVenue({...selectedVenue, images})}
+                onImagesChange={(images) =>
+                  setSelectedVenue({ ...selectedVenue, images })
+                }
                 onUpload={handleImageUpload}
                 onDelete={handleImageDelete}
                 maxImages={10}
               />
-              
+
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowImageModal(false)}
@@ -512,7 +667,26 @@ export default function Venues() {
           </div>
         </div>
       )}
+
+      {/* Custom Dialogs */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+        autoClose={alertDialog.autoClose}
+        onConfirm={alertDialog.onConfirm}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        type={confirmDialog.type}
+      />
     </div>
   );
 }
-

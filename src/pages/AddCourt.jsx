@@ -16,6 +16,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import ImageUpload from "../components/ImageUpload";
+import { AlertDialog } from "../components/Dialog";
 
 export default function AddCourt() {
   const navigate = useNavigate();
@@ -77,6 +78,9 @@ export default function AddCourt() {
 
   // Images
   const [images, setImages] = useState([]);
+  
+  // Dialog state
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
 
   useEffect(() => {
     // If no venueId in params, try to get it from the current user's venue
@@ -134,6 +138,11 @@ export default function AddCourt() {
   const handleImageDelete = async (imageUrl) => {
     // For court creation, remove from local state
     setImages(prev => prev.filter(img => img !== imageUrl));
+  };
+
+  // Dialog helper function
+  const showAlert = (title, message, type = 'info', autoClose = false, onConfirm = null) => {
+    setAlertDialog({ isOpen: true, title, message, type, autoClose, onConfirm });
   };
 
   const handleSubmit = async (e) => {
@@ -223,15 +232,16 @@ export default function AddCourt() {
           console.log("Images uploaded successfully");
         } catch (imageError) {
           console.error("Error uploading images:", imageError);
-          alert("Court created but failed to upload images. You can upload them later.");
+          showAlert("Warning", "Court created but failed to upload images. You can upload them later.", "warning");
         }
       }
       
-      alert("Court created successfully!");
-      navigate("/venues");
+      showAlert("Success", "Court created successfully!", "success", true, () => {
+        navigate("/venues");
+      });
     } catch (error) {
       console.error("Error creating court:", error);
-      alert("Failed to create court. Please try again.");
+      showAlert("Error", "Failed to create court. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -803,6 +813,17 @@ export default function AddCourt() {
           </div>
         </div>
       </div>
+
+      {/* Custom Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+        autoClose={alertDialog.autoClose}
+        onConfirm={alertDialog.onConfirm}
+      />
     </div>
   );
 }

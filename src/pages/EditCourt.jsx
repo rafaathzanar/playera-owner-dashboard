@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { 
   ArrowLeftIcon,
@@ -10,14 +10,13 @@ import {
   LightBulbIcon,
   PhotoIcon
 } from "@heroicons/react/24/outline";
-import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import ImageUpload from "../components/ImageUpload";
+import { AlertDialog } from "../components/Dialog";
 
 export default function EditCourt() {
   const navigate = useNavigate();
   const { courtId } = useParams();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
@@ -75,14 +74,11 @@ export default function EditCourt() {
 
   // Images
   const [images, setImages] = useState([]);
+  
+  // Dialog state
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
 
-  useEffect(() => {
-    if (courtId) {
-      fetchCourtData();
-    }
-  }, [courtId]);
-
-  const fetchCourtData = async () => {
+  const fetchCourtData = useCallback(async () => {
     try {
       setFetching(true);
       const courtData = await api.getCourtById(courtId);
@@ -145,11 +141,17 @@ export default function EditCourt() {
 
     } catch (error) {
       console.error("Error fetching court data:", error);
-      alert("Failed to fetch court data. Please try again.");
+      showAlert("Error", "Failed to fetch court data. Please try again.", "error");
     } finally {
       setFetching(false);
     }
-  };
+  }, [courtId]);
+
+  useEffect(() => {
+    if (courtId) {
+      fetchCourtData();
+    }
+  }, [courtId, fetchCourtData]);
 
   const handleBasicInfoChange = (field, value) => {
     setBasicInfo(prev => ({ ...prev, [field]: value }));
@@ -175,15 +177,20 @@ export default function EditCourt() {
     setMaintenance(prev => ({ ...prev, [field]: value }));
   };
 
+  // Dialog helper function
+  const showAlert = (title, message, type = 'info', autoClose = false, onConfirm = null) => {
+    setAlertDialog({ isOpen: true, title, message, type, autoClose, onConfirm });
+  };
+
   const handleImageUpload = async (files) => {
     try {
       await api.uploadCourtImages(courtId, files);
       // Refresh court data to show updated images
       await fetchCourtData();
-      alert('Images uploaded successfully!');
+      showAlert('Success', 'Images uploaded successfully!', 'success');
     } catch (error) {
       console.error('Error uploading images:', error);
-      alert('Failed to upload images. Please try again.');
+      showAlert('Upload Failed', 'Failed to upload images. Please try again.', 'error');
     }
   };
 
@@ -192,10 +199,10 @@ export default function EditCourt() {
       await api.deleteCourtImage(courtId, imageUrl);
       // Refresh court data to show updated images
       await fetchCourtData();
-      alert('Image deleted successfully!');
+      showAlert('Success', 'Image deleted successfully!', 'success');
     } catch (error) {
       console.error('Error deleting image:', error);
-      alert('Failed to delete image. Please try again.');
+      showAlert('Delete Failed', 'Failed to delete image. Please try again.', 'error');
     }
   };
 
@@ -213,13 +220,13 @@ export default function EditCourt() {
         }
       } catch (error) {
         console.error("Error fetching venue:", error);
-        alert("Failed to fetch venue information. Please try again.");
+        showAlert("Error", "Failed to fetch venue information. Please try again.", "error");
         setLoading(false);
         return;
       }
 
       if (!venueId) {
-        alert("No venue found for the current user. Please create a venue first.");
+        showAlert("Error", "No venue found for the current user. Please create a venue first.", "error");
         setLoading(false);
         return;
       }
@@ -263,11 +270,12 @@ export default function EditCourt() {
       await api.updateCourt(courtId, courtData);
       console.log("Court updated successfully");
       
-      alert("Court updated successfully!");
-      navigate("/venues");
+      showAlert("Success", "Court updated successfully!", "success", true, () => {
+        navigate("/venues");
+      });
     } catch (error) {
       console.error("Error updating court:", error);
-      alert("Failed to update court. Please try again.");
+      showAlert("Error", "Failed to update court. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -834,6 +842,17 @@ export default function EditCourt() {
           </div>
         </div>
       </div>
+
+      {/* Custom Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+        autoClose={alertDialog.autoClose}
+        onConfirm={alertDialog.onConfirm}
+      />
     </div>
   );
 }

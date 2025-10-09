@@ -9,6 +9,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import ImageUpload from "../components/ImageUpload";
+import { AlertDialog } from "../components/Dialog";
 
 export default function AddVenue() {
   const navigate = useNavigate();
@@ -41,6 +42,9 @@ export default function AddVenue() {
 
   // Images
   const [images, setImages] = useState([]);
+  
+  // Dialog state
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
 
   const handleBasicInfoChange = (field, value) => {
     setBasicInfo(prev => ({ ...prev, [field]: value }));
@@ -50,6 +54,11 @@ export default function AddVenue() {
 
   const handleBusinessHoursChange = (field, value) => {
     setBusinessHours(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Dialog helper function
+  const showAlert = (title, message, type = 'info', autoClose = false, onConfirm = null) => {
+    setAlertDialog({ isOpen: true, title, message, type, autoClose, onConfirm });
   };
 
   const handleSubmit = async (e) => {
@@ -98,15 +107,17 @@ export default function AddVenue() {
           console.log("Images uploaded successfully");
         } catch (imageError) {
           console.error("Error uploading images:", imageError);
-          alert("Venue created but failed to upload images. You can upload them later.");
+          showAlert("Warning", "Venue created but failed to upload images. You can upload them later.", "warning");
         }
       }
       
-      // Navigate back to venues page
-      navigate("/venues");
+      // Show success message and navigate
+      showAlert("Success", "Venue created successfully!", "success", true, () => {
+        navigate("/venues");
+      });
     } catch (error) {
       console.error("Error creating venue:", error);
-      alert("Failed to create venue. Please try again.");
+      showAlert("Error", "Failed to create venue. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -403,6 +414,17 @@ export default function AddVenue() {
           </div>
         </div>
       </div>
+
+      {/* Custom Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+        autoClose={alertDialog.autoClose}
+        onConfirm={alertDialog.onConfirm}
+      />
     </div>
   );
 }

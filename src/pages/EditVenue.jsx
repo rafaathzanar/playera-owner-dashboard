@@ -1,25 +1,19 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { 
+import {
   ArrowLeftIcon,
   BuildingOfficeIcon,
-  MapPinIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  GlobeAltIcon,
-  CurrencyDollarIcon,
   ClockIcon,
   PhotoIcon
 } from "@heroicons/react/24/outline";
-import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import ImageUpload from "../components/ImageUpload";
+import { AlertDialog } from "../components/Dialog";
 
 export default function EditVenue() {
   const navigate = useNavigate();
   const { venueId } = useParams();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
@@ -47,18 +41,11 @@ export default function EditVenue() {
 
   // Images
   const [images, setImages] = useState([]);
+  
+  // Dialog state
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
 
-  useEffect(() => {
-    console.log('=== DEBUG: EditVenue Component ===');
-    console.log('venueId from useParams:', venueId);
-    console.log('typeof venueId:', typeof venueId);
-    console.log('venueId === undefined:', venueId === undefined);
-    console.log('===============================');
-    
-    fetchVenueData();
-  }, [venueId]);
-
-  const fetchVenueData = async () => {
+  const fetchVenueData = useCallback(async () => {
     try {
       setFetching(true);
       const venueData = await api.getVenueById(venueId);
@@ -88,11 +75,21 @@ export default function EditVenue() {
 
     } catch (error) {
       console.error("Error fetching venue data:", error);
-      alert("Failed to fetch venue data. Please try again.");
+      showAlert("Error", "Failed to fetch venue data. Please try again.", "error");
     } finally {
       setFetching(false);
     }
-  };
+  }, [venueId]);
+
+  useEffect(() => {
+    console.log('=== DEBUG: EditVenue Component ===');
+    console.log('venueId from useParams:', venueId);
+    console.log('typeof venueId:', typeof venueId);
+    console.log('venueId === undefined:', venueId === undefined);
+    console.log('===============================');
+    
+    fetchVenueData();
+  }, [venueId, fetchVenueData]);
 
   const handleBasicInfoChange = (field, value) => {
     setBasicInfo(prev => ({ ...prev, [field]: value }));
@@ -102,6 +99,11 @@ export default function EditVenue() {
     setBusinessHours(prev => ({ ...prev, [field]: value }));
   };
 
+  // Dialog helper function
+  const showAlert = (title, message, type = 'info', autoClose = false, onConfirm = null) => {
+    setAlertDialog({ isOpen: true, title, message, type, autoClose, onConfirm });
+  };
+
   const handleImageUpload = async (files) => {
     try {
       await api.uploadVenueImages(venueId, files);
@@ -109,7 +111,7 @@ export default function EditVenue() {
       await fetchVenueData();
     } catch (error) {
       console.error('Error uploading images:', error);
-      alert('Failed to upload images. Please try again.');
+      showAlert('Upload Failed', 'Failed to upload images. Please try again.', 'error');
     }
   };
 
@@ -120,7 +122,7 @@ export default function EditVenue() {
       await fetchVenueData();
     } catch (error) {
       console.error('Error deleting image:', error);
-      alert('Failed to delete image. Please try again.');
+      showAlert('Delete Failed', 'Failed to delete image. Please try again.', 'error');
     }
   };
 
@@ -132,7 +134,7 @@ export default function EditVenue() {
       // Validate required fields
       const maxCapacity = basicInfo.maxCapacity;
       if (!maxCapacity || maxCapacity === '' || (typeof maxCapacity === 'string' && maxCapacity.trim() === '') || maxCapacity <= 0) {
-        alert('Maximum Capacity is required. Please enter a valid number greater than 0.');
+        showAlert('Validation Error', 'Maximum Capacity is required. Please enter a valid number greater than 0.', 'error');
         setLoading(false);
         return;
       }
@@ -160,11 +162,12 @@ export default function EditVenue() {
       await api.updateVenue(venueId, venueData);
       console.log("Venue updated successfully");
       
-      alert("Venue updated successfully!");
-      navigate("/venues");
+      showAlert("Success", "Venue updated successfully!", "success", true, () => {
+        navigate("/venues");
+      });
     } catch (error) {
       console.error("Error updating venue:", error);
-      alert("Failed to update venue. Please try again.");
+      showAlert("Error", "Failed to update venue. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -449,6 +452,17 @@ export default function EditVenue() {
           </div>
         </div>
       </div>
+
+      {/* Custom Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+        autoClose={alertDialog.autoClose}
+        onConfirm={alertDialog.onConfirm}
+      />
     </div>
   );
 }

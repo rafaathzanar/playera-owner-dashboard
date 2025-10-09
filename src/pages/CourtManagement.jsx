@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import ImageUpload from "../components/ImageUpload";
+import { AlertDialog, ConfirmDialog } from "../components/Dialog";
 
 export default function CourtManagement() {
   const { venueId } = useParams();
@@ -26,6 +27,10 @@ export default function CourtManagement() {
   const [editingCourt, setEditingCourt] = useState(null);
   const [selectedCourt, setSelectedCourt] = useState(null);
   const [venue, setVenue] = useState(null);
+  
+  // Dialog states
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'warning' });
 
   // Court form state
   const [courtForm, setCourtForm] = useState({
@@ -156,17 +161,22 @@ export default function CourtManagement() {
   };
 
   const handleDeleteCourt = async (courtId) => {
-    if (window.confirm('Are you sure you want to delete this court?')) {
-      try {
-        // TODO: Replace with real API call when backend is ready
-        // await api.deleteCourt(courtId);
-        
-        // For now, simulate deleting a court
-        setCourts(prev => prev.filter(court => court.courtId !== courtId));
-      } catch (error) {
-        console.error('Error deleting court:', error);
-      }
-    }
+    showConfirm(
+      "Delete Court",
+      "Are you sure you want to delete this court? This action cannot be undone.",
+      async () => {
+        try {
+          await api.deleteCourt(courtId);
+          // Refresh courts data after successful deletion
+          await fetchVenueAndCourts();
+          showAlert("Success", "Court deleted successfully!", "success");
+        } catch (error) {
+          console.error('Error deleting court:', error);
+          showAlert("Error", "Failed to delete court. Please try again.", "error");
+        }
+      },
+      "danger"
+    );
   };
 
   const openEditModal = (court) => {
@@ -207,6 +217,15 @@ export default function CourtManagement() {
     setShowImageModal(true);
   };
 
+  // Dialog helper functions
+  const showAlert = (title, message, type = 'info', autoClose = false, onConfirm = null) => {
+    setAlertDialog({ isOpen: true, title, message, type, autoClose, onConfirm });
+  };
+
+  const showConfirm = (title, message, onConfirm, type = 'warning') => {
+    setConfirmDialog({ isOpen: true, title, message, onConfirm, type });
+  };
+
   const handleImageUpload = async (files) => {
     if (!selectedCourt) return;
     
@@ -214,10 +233,10 @@ export default function CourtManagement() {
       await api.uploadCourtImages(selectedCourt.courtId, files);
       // Refresh courts data to show updated images
       await fetchVenueAndCourts();
-      alert('Images uploaded successfully!');
+      showAlert('Success', 'Images uploaded successfully!', 'success');
     } catch (error) {
       console.error('Error uploading images:', error);
-      alert('Failed to upload images. Please try again.');
+      showAlert('Upload Failed', 'Failed to upload images. Please try again.', 'error');
     }
   };
 
@@ -228,10 +247,10 @@ export default function CourtManagement() {
       await api.deleteCourtImage(selectedCourt.courtId, imageUrl);
       // Refresh courts data to show updated images
       await fetchVenueAndCourts();
-      alert('Image deleted successfully!');
+      showAlert('Success', 'Image deleted successfully!', 'success');
     } catch (error) {
       console.error('Error deleting image:', error);
-      alert('Failed to delete image. Please try again.');
+      showAlert('Delete Failed', 'Failed to delete image. Please try again.', 'error');
     }
   };
 
@@ -863,6 +882,26 @@ export default function CourtManagement() {
           </div>
         </div>
       )}
+
+      {/* Custom Dialogs */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+        autoClose={alertDialog.autoClose}
+        onConfirm={alertDialog.onConfirm}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        type={confirmDialog.type}
+      />
     </div>
   );
 }
