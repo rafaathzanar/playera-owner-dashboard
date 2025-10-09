@@ -213,7 +213,7 @@ export default function CourtManagement() {
     try {
       await api.uploadCourtImages(selectedCourt.courtId, files);
       // Refresh courts data to show updated images
-      await fetchCourts();
+      await fetchVenueAndCourts();
       alert('Images uploaded successfully!');
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -227,7 +227,7 @@ export default function CourtManagement() {
     try {
       await api.deleteCourtImage(selectedCourt.courtId, imageUrl);
       // Refresh courts data to show updated images
-      await fetchCourts();
+      await fetchVenueAndCourts();
       alert('Image deleted successfully!');
     } catch (error) {
       console.error('Error deleting image:', error);
