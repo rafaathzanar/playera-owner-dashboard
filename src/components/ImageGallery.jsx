@@ -77,3 +77,4 @@ export default function ImageGallery({ images, maxHeight = '200px', showCounter 
     </div>
   );
 }
+
