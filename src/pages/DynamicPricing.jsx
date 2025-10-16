@@ -217,6 +217,68 @@ export default function DynamicPricing() {
     };
   };
 
+  // Get dynamic time ranges based on court configuration
+  const getDynamicTimeRanges = () => {
+    if (!selectedCourt || !pricingForm.dynamicPricingEnabled) {
+      return {
+        offPeakMorning: "9:00-10:00 AM",
+        peakEvening: "7:00-8:00 PM", 
+        offPeakNight: "10:00-11:00 PM",
+        weekendOffPeakMorning: "10:00-11:00 AM",
+        weekendPeakEvening: "8:00-9:00 PM",
+        weekendOffPeakAfternoon: "2:00-3:00 PM"
+      };
+    }
+
+    const peakStart = pricingForm.peakHourStart || selectedCourt.peakHourStart || "18:00";
+    const peakEnd = pricingForm.peakHourEnd || selectedCourt.peakHourEnd || "22:00";
+    
+    // Convert 24-hour format to 12-hour format for display
+    const formatTime = (time24) => {
+      const [hours, minutes] = time24.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return `${hour12}:${minutes} ${ampm}`;
+    };
+
+    const formatTimeRange = (start, end) => {
+      return `${formatTime(start)}-${formatTime(end)}`;
+    };
+
+    // Calculate peak hour range
+    const peakStartHour = parseInt(peakStart.split(':')[0]);
+    const peakEndHour = parseInt(peakEnd.split(':')[0]);
+    
+    // Generate examples based on actual peak hours from database
+    const peakTimeRange = formatTimeRange(peakStart, peakEnd);
+    
+    // Off-peak examples (before and after peak hours)
+    const offPeakBeforePeak = peakStartHour > 9 ? 
+      formatTimeRange(`${peakStartHour - 1}:00`, `${peakStartHour}:00`) : 
+      formatTimeRange("9:00", "10:00");
+    
+    const offPeakAfterPeak = peakEndHour < 23 ? 
+      formatTimeRange(`${peakEndHour}:00`, `${peakEndHour + 1}:00`) : 
+      formatTimeRange("22:00", "23:00");
+
+    // Afternoon off-peak - use actual court opening time if available
+    const courtOpeningTime = selectedCourt.openingTime || "10:00";
+    const openingHour = parseInt(courtOpeningTime.split(':')[0]);
+    const afternoonOffPeak = openingHour < 14 ? 
+      formatTimeRange("14:00", "15:00") : 
+      formatTimeRange(`${openingHour + 4}:00`, `${openingHour + 5}:00`);
+
+    return {
+      offPeakMorning: offPeakBeforePeak,
+      peakEvening: peakTimeRange,
+      offPeakNight: offPeakAfterPeak,
+      weekendOffPeakMorning: offPeakBeforePeak,
+      weekendPeakEvening: peakTimeRange,
+      weekendOffPeakAfternoon: afternoonOffPeak
+    };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -479,7 +541,7 @@ export default function DynamicPricing() {
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div>
                         <span className="font-medium text-gray-900">
-                          9:00 AM
+                          {getDynamicTimeRanges().offPeakMorning}
                         </span>
                         <p className="text-xs text-gray-500">Off-peak hours</p>
                       </div>
@@ -493,7 +555,7 @@ export default function DynamicPricing() {
                     <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
                       <div>
                         <span className="font-medium text-orange-900">
-                          7:00 PM
+                          {getDynamicTimeRanges().peakEvening}
                         </span>
                         <p className="text-xs text-orange-600">
                           Peak hours ({pricingForm.peakHourMultiplier}x)
@@ -509,7 +571,7 @@ export default function DynamicPricing() {
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div>
                         <span className="font-medium text-gray-900">
-                          10:00 PM
+                          {getDynamicTimeRanges().offPeakNight}
                         </span>
                         <p className="text-xs text-gray-500">Off-peak hours</p>
                       </div>
@@ -532,7 +594,7 @@ export default function DynamicPricing() {
                     <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                       <div>
                         <span className="font-medium text-blue-900">
-                          10:00 AM
+                          {getDynamicTimeRanges().weekendOffPeakMorning}
                         </span>
                         <p className="text-xs text-blue-600">
                           Off-peak + Weekend ({pricingForm.weekendMultiplier}x)
@@ -548,7 +610,7 @@ export default function DynamicPricing() {
                     <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                       <div>
                         <span className="font-medium text-purple-900">
-                          8:00 PM
+                          {getDynamicTimeRanges().weekendPeakEvening}
                         </span>
                         <p className="text-xs text-purple-600">
                           Peak + Weekend ({pricingForm.peakHourMultiplier}x ×{" "}
@@ -565,7 +627,7 @@ export default function DynamicPricing() {
                     <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                       <div>
                         <span className="font-medium text-blue-900">
-                          2:00 PM
+                          {getDynamicTimeRanges().weekendOffPeakAfternoon}
                         </span>
                         <p className="text-xs text-blue-600">
                           Off-peak + Weekend ({pricingForm.weekendMultiplier}x)
