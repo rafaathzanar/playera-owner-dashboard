@@ -1,18 +1,28 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { 
-  PlusIcon, 
-  PencilIcon, 
+import {
+  PlusIcon,
+  PencilIcon,
   TrashIcon,
   CurrencyDollarIcon,
   ExclamationTriangleIcon,
-  WrenchScrewdriverIcon
+  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 
 // EquipmentModal component defined outside to prevent recreation
-const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmentForm, handleInputChange, courts, equipmentStatuses }) => {
+const EquipmentModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  title,
+  submitText,
+  equipmentForm,
+  handleInputChange,
+  courts,
+  equipmentStatuses,
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -24,8 +34,18 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -40,7 +60,7 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
               <input
                 type="text"
                 value={equipmentForm.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 required
               />
@@ -52,12 +72,12 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
               </label>
               <select
                 value={equipmentForm.courtId}
-                onChange={(e) => handleInputChange('courtId', e.target.value)}
+                onChange={(e) => handleInputChange("courtId", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 required
               >
                 <option value="">Select a court</option>
-                {courts.map(court => (
+                {courts.map((court) => (
                   <option key={court.courtId} value={court.courtId}>
                     {court.courtName}
                   </option>
@@ -72,7 +92,7 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
             </label>
             <textarea
               value={equipmentForm.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={(e) => handleInputChange("description", e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
@@ -89,7 +109,9 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
                 step="0.01"
                 min="0"
                 value={equipmentForm.ratePerHour}
-                onChange={(e) => handleInputChange('ratePerHour', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("ratePerHour", e.target.value)
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 required
               />
@@ -103,7 +125,9 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
                 type="number"
                 min="1"
                 value={equipmentForm.totalQuantity}
-                onChange={(e) => handleInputChange('totalQuantity', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("totalQuantity", e.target.value)
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 required
               />
@@ -117,7 +141,9 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
                 type="number"
                 min="0"
                 value={equipmentForm.availableQuantity}
-                onChange={(e) => handleInputChange('availableQuantity', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("availableQuantity", e.target.value)
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 required
               />
@@ -130,19 +156,19 @@ const EquipmentModal = ({ isOpen, onClose, onSubmit, title, submitText, equipmen
               <WrenchScrewdriverIcon className="w-5 h-5 mr-2" />
               Status
             </h3>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Equipment Status
               </label>
               <select
                 value={equipmentForm.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
+                onChange={(e) => handleInputChange("status", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                {equipmentStatuses.map(status => (
+                {equipmentStatuses.map((status) => (
                   <option key={status} value={status}>
-                    {status.replace('_', ' ')}
+                    {status.replace("_", " ")}
                   </option>
                 ))}
               </select>
@@ -185,18 +211,16 @@ export default function EquipmentManagement() {
 
   // Equipment form state
   const [equipmentForm, setEquipmentForm] = useState({
-    name: '',
-    description: '',
-    ratePerHour: '',
-    totalQuantity: '',
-    availableQuantity: '',
-    status: 'AVAILABLE',
-    courtId: ''
+    name: "",
+    description: "",
+    ratePerHour: "",
+    totalQuantity: "",
+    availableQuantity: "",
+    status: "AVAILABLE",
+    courtId: "",
   });
 
-  const equipmentStatuses = [
-    'AVAILABLE','RESERVED'
-  ];
+  const equipmentStatuses = ["AVAILABLE", "RESERVED"];
 
   useEffect(() => {
     if (venueId) {
@@ -208,9 +232,9 @@ export default function EquipmentManagement() {
     try {
       setLoading(true);
       setError(null);
-      
+
       if (!user?.userId) {
-        console.error('User not authenticated');
+        console.error("User not authenticated");
         setVenue(null);
         setCourts([]);
         setEquipment([]);
@@ -219,29 +243,28 @@ export default function EquipmentManagement() {
 
       // Fetch venue data first
       const venueData = await api.getVenueByOwner(user.userId);
-      console.log('Venue data received:', venueData);
-      
+      console.log("Venue data received:", venueData);
+
       if (venueData && venueData.venueId) {
         setVenue(venueData);
-        
+
         // Fetch courts and equipment for this venue
         const [courtsData, equipmentData] = await Promise.all([
           api.getCourtsByVenue(venueData.venueId),
-          api.getEquipment(venueData.venueId)
+          api.getEquipment(venueData.venueId),
         ]);
-        
+
         setCourts(courtsData || []);
         setEquipment(equipmentData || []);
       } else {
-        console.log('No venue data or invalid venue ID:', venueData);
+        console.log("No venue data or invalid venue ID:", venueData);
         setVenue(null);
         setCourts([]);
         setEquipment([]);
       }
-      
     } catch (error) {
-      console.error('Error fetching venue and data:', error);
-      setError('Failed to load venue data. Please try again.');
+      console.error("Error fetching venue and data:", error);
+      setError("Failed to load venue data. Please try again.");
       setVenue(null);
       setCourts([]);
       setEquipment([]);
@@ -251,22 +274,25 @@ export default function EquipmentManagement() {
   };
 
   const handleInputChange = useCallback((field, value) => {
-    console.log('handleInputChange called:', field, value); // Debug log
-    setEquipmentForm(prev => {
+    console.log("handleInputChange called:", field, value); // Debug log
+    setEquipmentForm((prev) => {
       const newState = { ...prev, [field]: value };
-      console.log('New form state:', newState); // Debug log
+      console.log("New form state:", newState); // Debug log
       return newState;
     });
   }, []);
 
   const handleAddEquipment = async (e) => {
     e.preventDefault();
-    console.log('Submitting form with data:', equipmentForm); // Debug log
-    
+    console.log("Submitting form with data:", equipmentForm); // Debug log
+
     try {
       // Validate that available quantity doesn't exceed total quantity
-      if (parseInt(equipmentForm.availableQuantity) > parseInt(equipmentForm.totalQuantity)) {
-        alert('Available quantity cannot exceed total quantity');
+      if (
+        parseInt(equipmentForm.availableQuantity) >
+        parseInt(equipmentForm.totalQuantity)
+      ) {
+        alert("Available quantity cannot exceed total quantity");
         return;
       }
 
@@ -274,21 +300,21 @@ export default function EquipmentManagement() {
         ...equipmentForm,
         ratePerHour: parseFloat(equipmentForm.ratePerHour),
         totalQuantity: parseInt(equipmentForm.totalQuantity),
-        availableQuantity: parseInt(equipmentForm.availableQuantity)
+        availableQuantity: parseInt(equipmentForm.availableQuantity),
       };
 
-      console.log('Sending to API:', equipmentData); // Debug log
+      console.log("Sending to API:", equipmentData); // Debug log
       const newEquipment = await api.createEquipment(equipmentData);
-      
-      setEquipment(prev => [...prev, newEquipment]);
+
+      setEquipment((prev) => [...prev, newEquipment]);
       setShowAddModal(false);
       resetForm();
-      
+
       // Refresh data to get updated counts
       fetchVenueAndData();
     } catch (error) {
-      console.error('Error adding equipment:', error);
-      alert('Failed to add equipment. Please try again.');
+      console.error("Error adding equipment:", error);
+      alert("Failed to add equipment. Please try again.");
     }
   };
 
@@ -296,8 +322,11 @@ export default function EquipmentManagement() {
     e.preventDefault();
     try {
       // Validate that available quantity doesn't exceed total quantity
-      if (parseInt(equipmentForm.availableQuantity) > parseInt(equipmentForm.totalQuantity)) {
-        alert('Available quantity cannot exceed total quantity');
+      if (
+        parseInt(equipmentForm.availableQuantity) >
+        parseInt(equipmentForm.totalQuantity)
+      ) {
+        alert("Available quantity cannot exceed total quantity");
         return;
       }
 
@@ -305,46 +334,56 @@ export default function EquipmentManagement() {
         ...equipmentForm,
         ratePerHour: parseFloat(equipmentForm.ratePerHour),
         totalQuantity: parseInt(equipmentForm.totalQuantity),
-        availableQuantity: parseInt(equipmentForm.availableQuantity)
+        availableQuantity: parseInt(equipmentForm.availableQuantity),
       };
 
       await api.updateEquipment(editingEquipment.equipmentId, equipmentData);
-      
+
       // Update local state
-      setEquipment(prev => prev.map(eq => 
-        eq.equipmentId === editingEquipment.equipmentId 
-          ? { 
-              ...eq, 
-              ...equipmentData,
-              courtName: courts.find(c => c.courtId == equipmentForm.courtId)?.courtName || 'Unknown Court'
-            }
-          : eq
-      ));
-      
+      setEquipment((prev) =>
+        prev.map((eq) =>
+          eq.equipmentId === editingEquipment.equipmentId
+            ? {
+                ...eq,
+                ...equipmentData,
+                courtName:
+                  courts.find((c) => c.courtId == equipmentForm.courtId)
+                    ?.courtName || "Unknown Court",
+              }
+            : eq
+        )
+      );
+
       setShowEditModal(false);
       setEditingEquipment(null);
       resetForm();
-      
+
       // Refresh data to get updated counts
       fetchVenueAndData();
     } catch (error) {
-      console.error('Error updating equipment:', error);
-      alert('Failed to update equipment. Please try again.');
+      console.error("Error updating equipment:", error);
+      alert("Failed to update equipment. Please try again.");
     }
   };
 
   const handleDeleteEquipment = async (equipmentId) => {
-    if (window.confirm('Are you sure you want to delete this equipment? This action cannot be undone.')) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this equipment? This action cannot be undone."
+      )
+    ) {
       try {
         await api.deleteEquipment(equipmentId);
-        
-        setEquipment(prev => prev.filter(eq => eq.equipmentId !== equipmentId));
-        
+
+        setEquipment((prev) =>
+          prev.filter((eq) => eq.equipmentId !== equipmentId)
+        );
+
         // Refresh data to get updated counts
         fetchVenueAndData();
       } catch (error) {
-        console.error('Error deleting equipment:', error);
-        alert('Failed to delete equipment. Please try again.');
+        console.error("Error deleting equipment:", error);
+        alert("Failed to delete equipment. Please try again.");
       }
     }
   };
@@ -358,31 +397,31 @@ export default function EquipmentManagement() {
       totalQuantity: eq.totalQuantity,
       availableQuantity: eq.availableQuantity,
       status: eq.status,
-      courtId: eq.courtId
+      courtId: eq.courtId,
     });
     setShowEditModal(true);
   };
 
   const resetForm = () => {
     setEquipmentForm({
-      name: '',
-      description: '',
-      ratePerHour: '',
-      totalQuantity: '',
-      availableQuantity: '',
-      status: 'AVAILABLE',
-      courtId: ''
+      name: "",
+      description: "",
+      ratePerHour: "",
+      totalQuantity: "",
+      availableQuantity: "",
+      status: "AVAILABLE",
+      courtId: "",
     });
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'AVAILABLE':
-        return 'bg-green-100 text-green-800';
-      case 'RESERVED':
-        return 'bg-blue-100 text-blue-800';
+      case "AVAILABLE":
+        return "bg-green-100 text-green-800";
+      case "RESERVED":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -402,20 +441,24 @@ export default function EquipmentManagement() {
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
             <PlusIcon className="h-8 w-8 text-blue-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Your First Venue</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Create Your First Venue
+          </h3>
           <p className="text-gray-600 mb-6">
-            Before you can manage equipment, you need to create a venue first. This will be your sports facility where customers can rent equipment.
+            Before you can manage equipment, you need to create a venue first.
+            This will be your sports facility where customers can rent
+            equipment.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/add-venue')}
+              onClick={() => navigate("/add-venue")}
               className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
               Create Venue
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate("/dashboard")}
               className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
             >
               Back to Dashboard
@@ -434,20 +477,24 @@ export default function EquipmentManagement() {
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
             <PlusIcon className="h-8 w-8 text-green-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Add Your First Court</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Add Your First Court
+          </h3>
           <p className="text-gray-600 mb-6">
-            Before you can manage equipment, you need to add courts to your venue. Equipment is associated with specific courts where customers can use it.
+            Before you can manage equipment, you need to add courts to your
+            venue. Equipment is associated with specific courts where customers
+            can use it.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/courts')}
+              onClick={() => navigate("/courts")}
               className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
               Add Court
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate("/dashboard")}
               className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
             >
               Back to Dashboard
@@ -474,7 +521,9 @@ export default function EquipmentManagement() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Equipment Management</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Equipment Management
+              </h1>
               <p className="text-gray-600 mt-2">
                 Manage rental equipment for {venue?.name}
               </p>
@@ -492,15 +541,24 @@ export default function EquipmentManagement() {
         {/* Equipment Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {equipment.map((eq) => (
-            <div key={eq.equipmentId} className="bg-white rounded-lg shadow border border-gray-200">
+            <div
+              key={eq.equipmentId}
+              className="bg-white rounded-lg shadow border border-gray-200"
+            >
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{eq.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {eq.name}
+                    </h3>
                     <p className="text-sm text-gray-600">{eq.courtName}</p>
                   </div>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(eq.status)}`}>
-                    {eq.status.replace('_', ' ')}
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                      eq.status
+                    )}`}
+                  >
+                    {eq.status.replace("_", " ")}
                   </span>
                 </div>
 
@@ -509,11 +567,15 @@ export default function EquipmentManagement() {
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Rate:</span>
-                    <span className="font-medium">LKR {eq.ratePerHour}/hour</span>
+                    <span className="font-medium">
+                      LKR {eq.ratePerHour}/hour
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Quantity:</span>
-                    <span className="font-medium">{eq.availableQuantity}/{eq.totalQuantity}</span>
+                    <span className="font-medium">
+                      {eq.availableQuantity}/{eq.totalQuantity}
+                    </span>
                   </div>
                 </div>
 
@@ -532,10 +594,10 @@ export default function EquipmentManagement() {
                       <TrashIcon className="w-4 h-4" />
                     </button>
                   </div>
-                  
+
                   <div className="text-right">
                     <div className="text-sm text-gray-500">
-                      {eq.availableQuantity > 0 ? 'Available' : 'Out of Stock'}
+                      {eq.availableQuantity > 0 ? "Available" : "Out of Stock"}
                     </div>
                   </div>
                 </div>
@@ -547,58 +609,18 @@ export default function EquipmentManagement() {
         {equipment.length === 0 && (
           <div className="text-center py-12">
             <ExclamationTriangleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No equipment yet</h3>
-            <p className="text-gray-600 mb-4">Get started by adding rental equipment for your courts.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No equipment yet
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Get started by adding rental equipment for your courts.
+            </p>
             <button
               onClick={() => setShowAddModal(true)}
               className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700"
             >
               Add Your First Equipment
             </button>
-          </div>
-        )}
-
-        {/* Summary Stats */}
-        {equipment.length > 0 && (
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-blue-500">
-                  <CurrencyDollarIcon className="h-6 w-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Equipment</p>
-                  <p className="text-2xl font-semibold text-gray-900">{equipment.length}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-green-500">
-                  <CurrencyDollarIcon className="h-6 w-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Available</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {equipment.filter(eq => eq.status === 'AVAILABLE').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-purple-500">
-                  <CurrencyDollarIcon className="h-6 w-6 text-white" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Value</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    LKR {equipment.reduce((sum, eq) => sum + (eq.ratePerHour * eq.totalQuantity), 0).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
@@ -638,4 +660,3 @@ export default function EquipmentManagement() {
     </div>
   );
 }
-
