@@ -11,7 +11,11 @@ import {
   ExclamationTriangleIcon,
   PlusIcon,
   TrophyIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
+  DocumentArrowDownIcon,
+  DocumentTextIcon,
+  ChartPieIcon,
+  TableCellsIcon
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
@@ -28,10 +32,41 @@ export default function Analytics() {
   const [dateRange, setDateRange] = useState('month');
   const [analyticsData, setAnalyticsData] = useState(null);
   const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
 
   useEffect(() => {
     fetchVenueAndAnalytics();
   }, [dateRange]);
+
+  const exportCSV = async (reportType) => {
+    if (!venue?.venueId) return;
+    
+    try {
+      setExporting(true);
+      
+      // Use the API service for proper URL and headers
+      const blob = await api.exportRevenueReport(venue.venueId, reportType);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${reportType.toLowerCase()}_revenue_report_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      // Show success notification
+      setExportSuccess(true);
+      setTimeout(() => setExportSuccess(false), 3000);
+    } catch (error) {
+      console.error('Export error:', error);
+      setError('Failed to export report');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const fetchVenueAndAnalytics = async () => {
     try {
@@ -72,7 +107,22 @@ export default function Analytics() {
         // Fetch analytics data
         try {
           const analytics = await api.getVenueAnalytics(venueData.venueId, dateRange);
+          console.log('=== FRONTEND ANALYTICS DEBUG ===');
           console.log('Analytics data received:', analytics);
+          console.log('Total Revenue:', analytics.totalRevenue);
+          console.log('Court Revenue:', analytics.courtRevenue);
+          console.log('Equipment Revenue:', analytics.equipmentRevenue);
+          console.log('Total Bookings:', analytics.totalBookings);
+          console.log('Confirmed Bookings:', analytics.confirmedBookings);
+          console.log('Total Customers:', analytics.totalCustomers);
+          console.log('New Customers:', analytics.newCustomers);
+          console.log('Returning Customers:', analytics.returningCustomers);
+          console.log('Court Occupancy:', analytics.courtOccupancy);
+          console.log('Court Revenue Map:', analytics.courtRevenueMap);
+          console.log('Equipment Usage:', analytics.equipmentUsage);
+          console.log('Equipment Revenue Map:', analytics.equipmentRevenueMap);
+          console.log('Monthly Trends:', analytics.monthlyTrends);
+          console.log('=== END FRONTEND ANALYTICS DEBUG ===');
           setAnalyticsData(analytics);
         } catch (error) {
           console.error('Error fetching analytics:', error);
@@ -116,7 +166,7 @@ export default function Analytics() {
     }
   };
 
-  const StatCard = ({ title, value, change, trend, icon: Icon, color, subtitle }) => (
+  const StatCard = ({ title, value, change, trend, icon: Icon, color, subtitle, description }) => (
     <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
       <div className="flex items-center">
         <div className={`p-3 rounded-lg ${color}`}>
@@ -126,6 +176,7 @@ export default function Analytics() {
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-semibold text-gray-900">{value}</p>
           {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+          {description && <p className="text-xs text-gray-400 mt-1 italic">{description}</p>}
           {change !== undefined && (
             <div className="flex items-center mt-1">
               {trend === 'up' ? (
@@ -150,18 +201,30 @@ export default function Analytics() {
 
     return (
       <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trends</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Revenue Trends</h3>
+          <ChartBarIcon className="h-5 w-5 text-gray-400" />
+        </div>
+        
+        {/* Description */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>What this shows:</strong> Monthly revenue trends to help you track business growth 
+            and identify seasonal patterns in your venue's performance.
+          </p>
+        </div>
+
         {months.length > 0 ? (
           <div className="h-64 flex items-end justify-between space-x-2">
             {months.map((month) => (
               <div key={month} className="flex flex-col items-center flex-1">
                 <div 
-                  className="bg-orange-500 rounded-t w-full min-w-[30px]"
+                  className="bg-gradient-to-t from-orange-500 to-orange-400 rounded-t w-full min-w-[30px] transition-all duration-300 hover:from-orange-600 hover:to-orange-500"
                   style={{ height: `${(monthlyData[month] / maxRevenue) * 200}px` }}
                 ></div>
                 <span className="text-xs text-gray-600 mt-2">{month}</span>
                 <span className="text-xs font-medium text-gray-900">
-                  LKR {(monthlyData[month] / 1000).toFixed(0)}k
+                  LKR {monthlyData[month].toLocaleString()}
                 </span>
               </div>
             ))}
@@ -178,13 +241,87 @@ export default function Analytics() {
     );
   };
 
+  const RevenueBreakdownChart = () => {
+    const courtRevenue = analyticsData.courtRevenue || 0;
+    const equipmentRevenue = analyticsData.equipmentRevenue || 0;
+    const totalRevenue = analyticsData.totalRevenue || 1;
+    
+    const courtPercentage = (courtRevenue / totalRevenue) * 100;
+    const equipmentPercentage = (equipmentRevenue / totalRevenue) * 100;
+
+    return (
+      <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Revenue Breakdown</h3>
+          <ChartPieIcon className="h-5 w-5 text-gray-400" />
+        </div>
+        
+        {/* Description */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>What this shows:</strong> How your total revenue is split between court bookings 
+            and equipment rentals. This helps you understand your revenue sources.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-blue-500 rounded mr-3"></div>
+              <span className="text-sm font-medium text-gray-700">Court Bookings</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-gray-900">LKR {courtRevenue.toLocaleString()}</div>
+              <div className="text-xs text-gray-500">{courtPercentage.toFixed(1)}%</div>
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${courtPercentage}%` }}
+            ></div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-green-500 rounded mr-3"></div>
+              <span className="text-sm font-medium text-gray-700">Equipment Rentals</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-gray-900">LKR {equipmentRevenue.toLocaleString()}</div>
+              <div className="text-xs text-gray-500">{equipmentPercentage.toFixed(1)}%</div>
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-green-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${equipmentPercentage}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const OccupancyChart = () => {
     const courtOccupancy = analyticsData.courtOccupancy || {};
     const courtBookings = analyticsData.courtBookings || {};
 
     return (
       <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Court Occupancy</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Court Occupancy</h3>
+          <ChartBarIcon className="h-5 w-5 text-gray-400" />
+        </div>
+        
+        {/* Description */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>What this shows:</strong> Percentage of time each court is booked vs. available time. 
+            Higher occupancy means better utilization of your venue space.
+          </p>
+        </div>
+
         {courts.length > 0 ? (
           <div className="space-y-4">
             {courts.map((court) => {
@@ -218,18 +355,36 @@ export default function Analytics() {
   };
 
   const PopularCourtsTable = () => {
-    const courtRevenue = analyticsData.courtRevenue || {};
+    const courtRevenueMap = analyticsData.courtRevenueMap || {};
     const courtBookings = analyticsData.courtBookings || {};
+
+    console.log('=== COURT PERFORMANCE DEBUG ===');
+    console.log('Court Revenue Map:', courtRevenueMap);
+    console.log('Court Bookings:', courtBookings);
+    console.log('Courts:', courts);
+    console.log('=== END COURT PERFORMANCE DEBUG ===');
 
     const courtData = courts.map(court => ({
       ...court,
-      revenue: courtRevenue[court.courtId] || 0,
+      revenue: courtRevenueMap[court.courtId] || 0,
       bookings: courtBookings[court.courtId] || 0
     })).sort((a, b) => b.revenue - a.revenue);
 
     return (
       <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Court Performance</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Court Performance</h3>
+          <TrophyIcon className="h-5 w-5 text-gray-400" />
+        </div>
+        
+        {/* Description */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>What this shows:</strong> Revenue and booking count for each court. 
+            This helps you identify which courts are most popular and profitable.
+          </p>
+        </div>
+
         {courtData.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -317,39 +472,133 @@ export default function Analytics() {
     );
   };
 
+  const KeyInsights = () => {
+    const insights = [];
+    
+    // Revenue insights
+    if (analyticsData.totalRevenue > 0) {
+      const avgBookingValue = analyticsData.totalRevenue / analyticsData.totalBookings;
+      insights.push({
+        icon: CurrencyDollarIcon,
+        title: "Average Booking Value",
+        value: `LKR ${avgBookingValue.toFixed(0)}`,
+        color: "text-green-600",
+        bgColor: "bg-green-50"
+      });
+    }
+    
+    // Occupancy insights
+    const maxOccupancy = Math.max(...Object.values(analyticsData.courtOccupancy || {}), 0);
+    if (maxOccupancy > 0) {
+      insights.push({
+        icon: ChartBarIcon,
+        title: "Peak Court Occupancy",
+        value: `${maxOccupancy.toFixed(1)}%`,
+        color: "text-blue-600",
+        bgColor: "bg-blue-50"
+      });
+    }
+    
+    // Customer insights
+    if (analyticsData.totalCustomers > 0) {
+      // For single customer, show customer acquisition instead of retention
+      if (analyticsData.totalCustomers === 1) {
+        insights.push({
+          icon: UserIcon,
+          title: "Customer Acquisition",
+          value: `${analyticsData.newCustomers} new customer${analyticsData.newCustomers > 1 ? 's' : ''}`,
+          color: "text-green-600",
+          bgColor: "bg-green-50"
+        });
+      } else {
+        const retentionRate = (analyticsData.returningCustomers / analyticsData.totalCustomers) * 100;
+        insights.push({
+          icon: UserIcon,
+          title: "Customer Retention",
+          value: `${retentionRate.toFixed(1)}%`,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50"
+        });
+      }
+    }
+    
+    return (
+      <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Key Insights</h3>
+          <TrophyIcon className="h-5 w-5 text-gray-400" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {insights.map((insight, index) => (
+            <div key={index} className={`p-4 rounded-lg ${insight.bgColor}`}>
+              <div className="flex items-center">
+                <insight.icon className={`h-6 w-6 ${insight.color} mr-3`} />
+                <div>
+                  <div className="text-sm font-medium text-gray-700">{insight.title}</div>
+                  <div className={`text-lg font-semibold ${insight.color}`}>{insight.value}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const TimeSlotAnalysis = () => {
     const peakHours = analyticsData.peakHours || [];
     const offPeakHours = analyticsData.offPeakHours || [];
 
     return (
       <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Time Slot Analysis</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Time Slot Analysis</h3>
+          <ClockIcon className="h-5 w-5 text-gray-400" />
+        </div>
+        
+        {/* Description */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>What this shows:</strong> Peak hours are your busiest times with higher pricing, 
+            while off-peak hours have lower pricing and more availability. This helps you understand 
+            when your venue is most in demand.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Peak Hours</h4>
+            <div className="flex items-center mb-2">
+              <h4 className="text-sm font-medium text-gray-700">Peak Hours</h4>
+              <span className="ml-2 text-xs text-red-600 bg-red-100 px-2 py-1 rounded-full">Higher Pricing</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Times when your venue is busiest and charges premium rates</p>
             <div className="space-y-1">
               {peakHours.length > 0 ? (
                 peakHours.map((time) => (
-                  <div key={time} className="text-sm text-gray-900 bg-red-50 px-3 py-1 rounded">
+                  <div key={time} className="text-sm text-gray-900 bg-red-50 px-3 py-2 rounded border-l-4 border-red-400">
                     {time}
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-gray-500">No peak hours data</div>
+                <div className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded">No peak hours configured</div>
               )}
             </div>
           </div>
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Off-Peak Hours</h4>
+            <div className="flex items-center mb-2">
+              <h4 className="text-sm font-medium text-gray-700">Off-Peak Hours</h4>
+              <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Lower Pricing</span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">Times with lower demand and discounted rates</p>
             <div className="space-y-1">
               {offPeakHours.length > 0 ? (
                 offPeakHours.map((time) => (
-                  <div key={time} className="text-sm text-gray-900 bg-green-50 px-3 py-1 rounded">
+                  <div key={time} className="text-sm text-gray-900 bg-green-50 px-3 py-2 rounded border-l-4 border-green-400">
                     {time}
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-gray-500">No off-peak hours data</div>
+                <div className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded">No off-peak hours configured</div>
               )}
             </div>
           </div>
@@ -431,6 +680,21 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <style jsx>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -452,9 +716,66 @@ export default function Analytics() {
                 <option value="quarter">Last 3 Months</option>
                 <option value="year">Last Year</option>
               </select>
+              
+              {/* Export Buttons */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={fetchVenueAndAnalytics}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                >
+                  <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh
+                </button>
+                <button
+                  onClick={() => exportCSV('weekly')}
+                  disabled={exporting}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {exporting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                  ) : (
+                    <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Weekly Report
+                </button>
+                <button
+                  onClick={() => exportCSV('monthly')}
+                  disabled={exporting}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {exporting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                  ) : (
+                    <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Monthly Report
+                </button>
+                <button
+                  onClick={() => exportCSV('custom')}
+                  disabled={exporting}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {exporting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <DocumentTextIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Custom Report
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Success Notification */}
+        {exportSuccess && (
+          <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-slide-in">
+            <DocumentArrowDownIcon className="h-5 w-5" />
+            <span>Report exported successfully!</span>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mb-6">
@@ -509,12 +830,13 @@ export default function Analytics() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
                 title="Total Revenue"
-                value={`LKR ${(analyticsData.totalRevenue / 1000).toFixed(0)}k`}
+                value={`LKR ${analyticsData.totalRevenue.toLocaleString()}`}
                 change={analyticsData.revenueChange}
                 trend={analyticsData.revenueTrend}
                 icon={CurrencyDollarIcon}
                 color="bg-green-500"
-                subtitle={`Court: LKR ${(analyticsData.courtRevenue / 1000).toFixed(0)}k`}
+                subtitle={`Court: LKR ${analyticsData.courtRevenue.toLocaleString()}`}
+                description="Total income from all bookings and equipment rentals"
               />
               <StatCard
                 title="Total Bookings"
@@ -524,6 +846,7 @@ export default function Analytics() {
                 icon={CalendarIcon}
                 color="bg-blue-500"
                 subtitle={`Confirmed: ${analyticsData.confirmedBookings}`}
+                description="All bookings including confirmed, pending, and cancelled"
               />
               <StatCard
                 title="Active Customers"
@@ -533,15 +856,17 @@ export default function Analytics() {
                 icon={UserIcon}
                 color="bg-purple-500"
                 subtitle={`New: ${analyticsData.newCustomers}`}
+                description="Unique customers who have made bookings"
               />
               <StatCard
                 title="Equipment Revenue"
-                value={`LKR ${(analyticsData.equipmentRevenue / 1000).toFixed(0)}k`}
+                value={`LKR ${analyticsData.equipmentRevenue.toLocaleString()}`}
                 change={0}
                 trend="neutral"
                 icon={TrophyIcon}
                 color="bg-orange-500"
                 subtitle={`${equipment.length} items`}
+                description="Income from equipment rentals and accessories"
               />
             </div>
 
@@ -550,6 +875,9 @@ export default function Analytics() {
               <RevenueChart />
               <OccupancyChart />
             </div>
+
+            {/* Key Insights */}
+            <KeyInsights />
 
             {/* Tables Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -562,28 +890,13 @@ export default function Analytics() {
         {/* Revenue Tab */}
         {activeTab === 'revenue' && (
           <div className="space-y-6">
-            <RevenueChart />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Breakdown</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Court Bookings</span>
-                    <span className="font-medium">LKR {analyticsData.courtRevenue.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Equipment Rentals</span>
-                    <span className="font-medium">LKR {analyticsData.equipmentRevenue.toLocaleString()}</span>
-                  </div>
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center font-semibold">
-                      <span>Total</span>
-                      <span>LKR {analyticsData.totalRevenue.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <RevenueChart />
+              <RevenueBreakdownChart />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <PopularCourtsTable />
+              <EquipmentUsageTable />
             </div>
           </div>
         )}

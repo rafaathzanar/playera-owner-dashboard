@@ -156,6 +156,26 @@ class ApiService {
     );
   }
 
+  // CSV Export APIs
+  async exportRevenueReport(venueId, reportType) {
+    const token = this.getAuthToken();
+    const response = await fetch(
+      `${this.baseURL}/analytics/venue/${venueId}/export/${reportType}`,
+      {
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+          Accept: "text/csv",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Export failed");
+    }
+
+    return response.blob();
+  }
+
   // Booking APIs
   async getVenueBookings(venueId) {
     return await this.request(`/bookings/venue/${venueId}`);
